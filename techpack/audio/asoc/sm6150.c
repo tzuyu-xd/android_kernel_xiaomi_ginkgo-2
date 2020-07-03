@@ -46,10 +46,6 @@
 #include "codecs/bolero/wsa-macro.h"
 #include "codecs/wcd937x/wcd937x.h"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#define DEBUG
-#endif
-
 #define DRV_NAME "sm6150-asoc-snd"
 
 #define __CHIPSET__ "SM6150 "
