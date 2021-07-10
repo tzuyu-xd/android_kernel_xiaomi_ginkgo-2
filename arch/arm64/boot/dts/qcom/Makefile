@@ -88,6 +88,7 @@ endif
 
 else # TARGET_BOARD_TYPE != auto
 
+ifneq ($(CONFIG_MACH_XIAOMI_GINKGO),y)
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8016-sbc.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8096-db820c.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= ipq8074-hk01.dtb
@@ -95,6 +96,7 @@ dtb-$(CONFIG_ARCH_QCOM)	+= msm8916-mtp.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= msm8992-bullhead-rev-101.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= msm8994-angler-rev-101.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= msm8996-mtp.dtb
+endif
 dtb-$(CONFIG_ARCH_QCS403) += qcs403-iot-sku1.dtb \
 		qcs403-iot-sku3.dtb \
 		qcs403-iot-sku5.dtb \
@@ -350,6 +352,24 @@ dtb-$(CONFIG_ARCH_SDMMAGPIE)	+= sdmmagpie-rumi.dtb \
 endif
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+ifeq ($(CONFIG_MACH_XIAOMI_GINKGO),y)
+	dtbo-$(CONFIG_ARCH_TRINKET) += \
+		trinket-rumi-overlay.dtbo \
+		trinket-idp-overlay.dtbo \
+		trinket-qrd-overlay.dtbo \
+		trinket-external-codec-idp-overlay.dtbo \
+		trinket-usbc-external-codec-idp-overlay.dtbo \
+		trinket-usbc-idp-overlay.dtbo \
+		trinket-dp-idp-overlay.dtbo
+
+trinket-rumi-overlay.dtbo-base := trinket.dtb
+trinket-idp-overlay.dtbo-base := trinket.dtb
+trinket-qrd-overlay.dtbo-base := trinket.dtb
+trinket-external-codec-idp-overlay.dtbo-base := trinket.dtb
+trinket-usbc-external-codec-idp-overlay.dtbo-base := trinket.dtb
+trinket-usbc-idp-overlay.dtbo-base := trinket.dtb
+trinket-dp-idp-overlay.dtbo-base := trinket.dtb
+else
 	dtbo-$(CONFIG_ARCH_TRINKET) += \
 		trinket-rumi-overlay.dtbo \
 		trinket-idp-overlay.dtbo \
@@ -386,6 +406,7 @@ trinket-iot-usbc-idp-overlay.dtbo-base := trinket-iot.dtb
 trinketp-iot-usbc-idp-overlay.dtbo-base := trinketp-iot.dtb
 trinket-iot-dp-idp-overlay.dtbo-base := trinket-iot.dtb
 trinketp-iot-dp-idp-overlay.dtbo-base := trinketp-iot.dtb
+endif
 else
 dtb-$(CONFIG_ARCH_TRINKET)	+= trinket-rumi.dtb \
 	trinket-idp.dtb \
