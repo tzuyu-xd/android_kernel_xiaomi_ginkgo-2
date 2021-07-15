@@ -20,11 +20,6 @@
 #include <linux/pmic-voter.h>
 #include "step-chg-jeita.h"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 #define STEP_CHG_VOTER		"STEP_CHG_VOTER"
 #define JEITA_VOTER		"JEITA_VOTER"
 

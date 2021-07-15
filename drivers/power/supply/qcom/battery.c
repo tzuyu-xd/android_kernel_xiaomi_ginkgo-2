@@ -51,11 +51,6 @@
 #define MAIN_FCC_VOTER			"MAIN_FCC_VOTER"
 #define PD_VOTER			"PD_VOTER"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 struct pl_data {
 	int			pl_mode;
 	int			pl_batfet_mode;
@@ -129,11 +124,7 @@ enum {
 	FORCE_INOV_DISABLE_BIT	= BIT(1),
 };
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-static int debug_mask = 0xfff;
-#else
 static int debug_mask;
-#endif
 module_param_named(debug_mask, debug_mask, int, 0600);
 
 #define pl_dbg(chip, reason, fmt, ...)				\

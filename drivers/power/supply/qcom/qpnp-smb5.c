@@ -34,8 +34,6 @@
 #include <linux/notifier.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/fb.h>
-#undef pr_debug
-#define pr_debug pr_err
 
 union power_supply_propval lct_therm_lvl_reserved;
 union power_supply_propval lct_therm_level;
@@ -251,11 +249,7 @@ struct smb5 {
 	struct smb_dt_props	dt;
 };
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-static int __debug_mask = 0xfff;
-#else
 static int __debug_mask;
-#endif
 module_param_named(
 	debug_mask, __debug_mask, int, 0600
 );

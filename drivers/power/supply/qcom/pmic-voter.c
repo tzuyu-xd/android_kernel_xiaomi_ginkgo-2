@@ -23,11 +23,6 @@
 #define NUM_MAX_CLIENTS		32
 #define DEBUG_FORCE_CLIENT	"DEBUG_FORCE_CLIENT"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 static DEFINE_SPINLOCK(votable_list_slock);
 static LIST_HEAD(votable_list);
 

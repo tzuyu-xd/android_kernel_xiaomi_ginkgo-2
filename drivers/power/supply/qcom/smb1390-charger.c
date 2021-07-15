@@ -24,11 +24,6 @@
 #include <linux/regmap.h>
 #include <linux/iio/consumer.h>
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 #define CORE_STATUS1_REG		0x1006
 #define WIN_OV_BIT			BIT(0)
 #define WIN_UV_BIT			BIT(1)

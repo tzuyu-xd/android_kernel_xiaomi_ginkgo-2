@@ -43,17 +43,10 @@
 #include "qg-defs.h"
 
 #ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-
 u8 set_cycle_flag = 0;
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-static int qg_debug_mask = 0xfff;
-#else
 static int qg_debug_mask;
-#endif
 module_param_named(
 	debug_mask, qg_debug_mask, int, 0600
 );

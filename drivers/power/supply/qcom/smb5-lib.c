@@ -36,11 +36,6 @@
 #define DETACH_ATTACH_MAX_INTERVAL ((unsigned long)330)
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 #define smblib_err(chg, fmt, ...)		\
 	pr_err("%s: %s: " fmt, chg->name,	\
 		__func__, ##__VA_ARGS__)	\
