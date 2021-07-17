@@ -2984,47 +2984,57 @@ static void msm_geni_serial_debug_init(struct uart_port *uport, bool console)
 		if (!msm_port->ipc_log_rx) {
 			scnprintf(name, sizeof(name), "%s%s",
 					dev_name(uport->dev), "_rx");
+#ifdef CONFIG_IPC_LOGGING
 			msm_port->ipc_log_rx = ipc_log_context_create(
 					IPC_LOG_TX_RX_PAGES, name, 0);
 			if (!msm_port->ipc_log_rx)
 				dev_info(uport->dev, "Err in Rx IPC Log\n");
+#endif
 		}
 		memset(name, 0, sizeof(name));
 		if (!msm_port->ipc_log_tx) {
 			scnprintf(name, sizeof(name), "%s%s",
 					dev_name(uport->dev), "_tx");
+#ifdef CONFIG_IPC_LOGGING
 			msm_port->ipc_log_tx = ipc_log_context_create(
 					IPC_LOG_TX_RX_PAGES, name, 0);
 			if (!msm_port->ipc_log_tx)
 				dev_info(uport->dev, "Err in Tx IPC Log\n");
+#endif
 		}
 		memset(name, 0, sizeof(name));
 		if (!msm_port->ipc_log_pwr) {
 			scnprintf(name, sizeof(name), "%s%s",
 					dev_name(uport->dev), "_pwr");
+#ifdef CONFIG_IPC_LOGGING
 			msm_port->ipc_log_pwr = ipc_log_context_create(
 					IPC_LOG_PWR_PAGES, name, 0);
 			if (!msm_port->ipc_log_pwr)
 				dev_info(uport->dev, "Err in Pwr IPC Log\n");
+#endif
 		}
 		memset(name, 0, sizeof(name));
 		if (!msm_port->ipc_log_misc) {
 			scnprintf(name, sizeof(name), "%s%s",
 					dev_name(uport->dev), "_misc");
+#ifdef CONFIG_IPC_LOGGING
 			msm_port->ipc_log_misc = ipc_log_context_create(
 					IPC_LOG_MISC_PAGES, name, 0);
 			if (!msm_port->ipc_log_misc)
 				dev_info(uport->dev, "Err in Misc IPC Log\n");
+#endif
 		}
 	} else {
 		memset(name, 0, sizeof(name));
 		if (!msm_port->console_log) {
 			scnprintf(name, sizeof(name), "%s%s",
 					dev_name(uport->dev), "_console");
+#ifdef CONFIG_IPC_LOGGING
 			msm_port->console_log = ipc_log_context_create(
 					IPC_LOG_MISC_PAGES, name, 0);
 			if (!msm_port->console_log)
 				dev_info(uport->dev, "Err in Misc IPC Log\n");
+#endif
 		}
 	}
 }
