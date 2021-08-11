@@ -2139,6 +2139,12 @@ static int msm_isp_cfg_ping_pong_address(
 		buf = msm_isp_get_stream_buffer(vfe_dev, stream_info);
 
 	if (!buf) {
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		trace_printk(
+			"%s: vfe %d stream_id %x buffer not available frame %d\n",
+			__func__, vfe_dev->pdev->id,
+			stream_info->stream_id,vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id);
+#endif
 		msm_isp_cfg_stream_scratch(stream_info, pingpong_status);
 		if (stream_info->controllable_output)
 			return 1;
@@ -3765,7 +3771,11 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 		(stream_info->undelivered_request_cnt <=
 			MAX_BUFFERS_IN_HW)
 		) {
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		trace_printk("%s:%d invalid time to request frame %d try drop_reconfig\n",
+#else
 		pr_debug("%s:%d invalid time to request frame %d try drop_reconfig\n",
+#endif
 			__func__, __LINE__, frame_id);
 		vfe_dev->isp_page->drop_reconfig = 1;
 		return 0;
@@ -3776,7 +3786,11 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 			(stream_info->undelivered_request_cnt <=
 				MAX_BUFFERS_IN_HW)) {
 		vfe_dev->isp_page->drop_reconfig = 1;
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		trace_printk("%s: vfe_%d request_frame %d cur frame id %d pix %d try drop_reconfig\n",
+#else
 		pr_debug("%s: vfe_%d request_frame %d cur frame id %d pix %d try drop_reconfig\n",
+#endif
 			__func__, vfe_dev->pdev->id, frame_id,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].active);
@@ -3784,14 +3798,22 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 	} else if ((vfe_dev->axi_data.src_info[frame_src].active && (frame_id !=
 		vfe_dev->axi_data.src_info[frame_src].frame_id +
 		vfe_dev->axi_data.src_info[frame_src].sof_counter_step))) {
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		trace_printk("%s:%d invalid frame id %d cur frame id %d pix %d\n",
+#else
 		pr_debug("%s:%d invalid frame id %d cur frame id %d pix %d\n",
+#endif
 			__func__, __LINE__, frame_id,
 			vfe_dev->axi_data.src_info[frame_src].frame_id,
 			vfe_dev->axi_data.src_info[frame_src].active);
 		goto error;
 	}
 	if (stream_info->undelivered_request_cnt >= MAX_BUFFERS_IN_HW) {
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		trace_printk("%s:%d invalid undelivered_request_cnt %d frame id %d\n",
+#else
 		pr_debug("%s:%d invalid undelivered_request_cnt %d frame id %d\n",
+#endif
 			__func__, __LINE__,
 			stream_info->undelivered_request_cnt,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id);
@@ -4556,6 +4578,10 @@ void msm_isp_process_axi_irq_stream(struct vfe_device *vfe_dev,
 				stream_info->bufq_handle[
 				VFE_BUF_QUEUE_DEFAULT] & 0xFF]++;
 			vfe_dev->error_info.framedrop_flag = 1;
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+			trace_printk("vfe %d stream %x frame %d drop frame\n",
+			vfe_dev->pdev->id, stream_info->stream_id, frame_id);
+#endif
 			if (vfe_dev->is_split) {
 				other_vfe_id = OTHER_VFE(vfe_dev->pdev->id);
 				temp_dev =
