@@ -29,8 +29,13 @@ struct device;
 enum led_brightness {
 	LED_OFF		= 0,
 	LED_ON		= 1,
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+	LED_HALF	= 25,
+	LED_FULL	= 50,
+#else
 	LED_HALF	= 127,
 	LED_FULL	= 255,
+#endif
 };
 
 struct led_classdev {
