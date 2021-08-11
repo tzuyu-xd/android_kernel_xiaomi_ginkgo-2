@@ -5367,7 +5367,7 @@ static ssize_t dsi_display_get_whitepoint(struct device *dev,
 	}
 #endif
 	if (rc <= 0) {
-		pr_err("get whitepoint failed rc=%d\n", rc);
+		pr_err("get whitepoint failed rc=%zd\n", rc);
 		goto exit;
 	}
 	if (0 != buf[1])
@@ -5525,7 +5525,7 @@ int lct_tp_lockdown_info_callback(void)
 	}
 
 	if (rc < 0) {
-		pr_err("get lockdown failed rc=%d\n", rc);
+		pr_err("get lockdown failed rc=%zd\n", rc);
 		goto exit;
 	}
 
