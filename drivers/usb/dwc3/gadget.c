@@ -37,11 +37,6 @@
 #include "io.h"
 
 #ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef dev_dbg 
-#define dev_dbg dev_err
-#undef pr_debug
-#define pr_debug pr_info
-
 #define DWC3_SOFT_RESET_TIMEOUT	10 /* 10 msec */
 #endif
 

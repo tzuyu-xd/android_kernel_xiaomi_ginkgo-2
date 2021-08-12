@@ -27,13 +27,6 @@
 #include <linux/usb/phy.h>
 #include <linux/reset.h>
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef dev_dbg 
-#define dev_dbg dev_err 
-#undef pr_debug 
-#define pr_debug pr_info
-#endif
-
 #define QUSB2PHY_PLL_PWR_CTL		0x18
 #define REF_BUF_EN			BIT(0)
 #define REXT_EN				BIT(1)

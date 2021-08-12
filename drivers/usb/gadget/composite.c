@@ -25,13 +25,6 @@
 
 #include "u_os_desc.h"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef dev_dbg
-#define dev_dbg dev_info
-#undef pr_debug 
-#define pr_debug pr_info
-#endif
-
 /**
  * struct usb_os_string - represents OS String to be reported by a gadget
  * @bLength: total length of the entire descritor, always 0x12

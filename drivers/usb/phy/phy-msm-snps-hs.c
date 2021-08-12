@@ -30,13 +30,6 @@
 #include <linux/reset.h>
 #include <linux/debugfs.h>
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef dev_dbg 
-#define dev_dbg dev_err 
-#undef pr_debug 
-#define pr_debug pr_info 
-#endif
-
 #define USB2_PHY_USB_PHY_UTMI_CTRL0		(0x3c)
 #define OPMODE_MASK				(0x3 << 3)
 #define OPMODE_NONDRIVING			(0x1 << 3)

@@ -14,11 +14,6 @@
 #include <linux/kdev_t.h>
 #include <linux/usb/ch9.h>
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef pr_debug 
-#define pr_debug pr_info
-#endif
-
 #ifdef CONFIG_USB_F_NCM
 #include "function/u_ncm.h"
 #endif

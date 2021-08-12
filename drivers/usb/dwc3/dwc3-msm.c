@@ -56,13 +56,6 @@
 #include "debug.h"
 #include "xhci.h"
 
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-#undef dev_dbg
-#define dev_dbg dev_err
-#undef pr_debug
-#define pr_debug pr_info
-#endif
-
 #define SDP_CONNETION_CHECK_TIME 10000 /* in ms */
 
 /* time out to wait for USB cable status notification (in ms)*/
