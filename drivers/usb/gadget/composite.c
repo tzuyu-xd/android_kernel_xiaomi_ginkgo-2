@@ -25,6 +25,13 @@
 
 #include "u_os_desc.h"
 
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+#undef dev_dbg
+#define dev_dbg dev_info
+#undef pr_debug 
+#define pr_debug pr_info
+#endif
+
 /**
  * struct usb_os_string - represents OS String to be reported by a gadget
  * @bLength: total length of the entire descritor, always 0x12
@@ -1798,7 +1805,11 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 					cdev->desc.bcdUSB = cpu_to_le16(0x0320);
 					cdev->desc.bMaxPacketSize0 = 9;
 				} else {
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+					cdev->desc.bcdUSB = cpu_to_le16(0x0200);
+#else
 					cdev->desc.bcdUSB = cpu_to_le16(0x0210);
+#endif
 				}
 			} else {
 				if (gadget->lpm_capable)

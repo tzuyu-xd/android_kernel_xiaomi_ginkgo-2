@@ -36,6 +36,15 @@
 #include "gadget.h"
 #include "io.h"
 
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+#undef dev_dbg 
+#define dev_dbg dev_err
+#undef pr_debug
+#define pr_debug pr_info
+
+#define DWC3_SOFT_RESET_TIMEOUT	10 /* 10 msec */
+#endif
+
 static void dwc3_gadget_wakeup_interrupt(struct dwc3 *dwc, bool remote_wakeup);
 static int dwc3_gadget_wakeup_int(struct dwc3 *dwc);
 static int __dwc3_gadget_start(struct dwc3 *dwc);
@@ -2164,6 +2173,9 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 {
 	u32			reg, reg1;
 	u32			timeout = 1500;
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+	ktime_t			start, diff;
+#endif
 
 	dbg_event(0xFF, "run_stop", is_on);
 	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
@@ -2175,6 +2187,26 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 
 		if (dwc->revision >= DWC3_REVISION_194A)
 			reg &= ~DWC3_DCTL_KEEP_CONNECT;
+
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
+		start = ktime_get(); 
+		/* issue device SoftReset */ 
+		dwc3_writel(dwc->regs, DWC3_DCTL, reg | DWC3_DCTL_CSFTRST); 
+		do { 
+			reg = dwc3_readl(dwc->regs, DWC3_DCTL); 
+			if (!(reg & DWC3_DCTL_CSFTRST)) 
+			break; 
+
+			diff = ktime_sub(ktime_get(), start); 
+			/* poll for max. 10ms */ 
+			if (ktime_to_ms(diff) > DWC3_SOFT_RESET_TIMEOUT) { 
+			printk_ratelimited(KERN_ERR 
+				"%s:core Reset Timed Out\n", __func__); 
+			break; 
+		} 
+			cpu_relax(); 
+		} while (true);
+#endif
 
 		dwc3_event_buffers_setup(dwc);
 		__dwc3_gadget_start(dwc);
