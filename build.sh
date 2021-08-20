@@ -27,6 +27,12 @@ export token=$TELEGRAM_TOKEN
 export BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
 export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 
+#
+# Set if do you use GCC or clang compiler
+# Default is clang compiler
+#
+COMPILER=clang
+
 # Get distro name
 DISTRO=$(cat /etc/issue)
 
@@ -69,16 +75,29 @@ tg_post_build() {
 
 # Set function for cloning repository
 clone() {
-	# Clone AnyKernel3 and clang
+	# Clone AnyKernel3
 	git clone --depth=1 https://github.com/fiqri19102002/AnyKernel3.git -b ginkgo
-	git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 
-	# Set environment for clang
-	TC_DIR=$KERNEL_DIR/clang
-
-	# Get path and compiler string
-	KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-	PATH=$TC_DIR/bin/:$PATH
+	if [[ $COMPILER == "clang" ]]; then
+		# Clone Proton clang
+		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+		# Set environment for clang
+		TC_DIR=$KERNEL_DIR/clang
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+		PATH=$TC_DIR/bin/:$PATH
+	elif [[ $COMPILER == "gcc" ]]; then
+		# Clone GCC ARM64 and ARM32
+		git clone --depth=1 https://github.com/arter97/arm64-gcc.git gcc64
+		git clone --depth=1 https://github.com/arter97/arm32-gcc.git gcc32
+		# Set environment for GCC ARM64 and ARM32
+		GCC64_DIR=$KERNEL_DIR/gcc64
+		GCC32_DIR=$KERNEL_DIR/gcc32
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
+		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
+	fi
+	
 	export PATH KBUILD_COMPILER_STRING
 }
 
@@ -94,15 +113,20 @@ compile() {
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8 (ginkgo)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal" "$CHATID"
 	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
-	make -j"$PROCS" O=out \
-			CROSS_COMPILE=aarch64-linux-gnu- \
-			CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-			CC=clang \
-			AR=llvm-ar \
-			NM=llvm-nm \
-			LD=ld.lld \
-			OBJDUMP=llvm-objdump \
-			STRIP=llvm-strip
+	if [[ $COMPILER == "clang" ]]; then
+		make -j"$PROCS" O=out \
+				CROSS_COMPILE=aarch64-linux-gnu- \
+				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+				CC=clang \
+				AR=llvm-ar \
+				NM=llvm-nm \
+				LD=ld.lld \
+				OBJDUMP=llvm-objdump \
+				STRIP=llvm-strip
+	elif [[ $COMPILER == "gcc" ]]; then
+		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-eabi-
+		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-elf-
+	fi
 	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
 	if [ -f "$IMG_DIR"/Image.gz-dtb ] 
