@@ -50,5 +50,4 @@ obj-$(CONFIG_CRYPTO_DEV_ARTPEC6) += axis/
 
 ifeq ($(cc-name),gcc)
 ccflags-y += -mtune=cortex-a73.cortex-a53 -march=armv8-a+crc+crypto
-asflags-y += -mtune=cortex-a73.cortex-a53 -march=armv8-a+crc+crypto
 endif
