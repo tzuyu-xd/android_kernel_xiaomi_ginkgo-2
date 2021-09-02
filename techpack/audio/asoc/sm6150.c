@@ -7966,10 +7966,10 @@ static struct snd_soc_dai_link msm_rx_tx_cdc_dma_be_dai_links[] = {
 		.codec_dai_name = "rx_macro_rx1",
 		.no_pcm = 1,
 		.dpcm_playback = 1,
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
 		.id = MSM_BACKEND_DAI_RX_CDC_DMA_RX_0,
-#endif
+#ifdef CONFIG_MACH_XIAOMI_GINKGO
 		.init = &msm_int_audrx_init,
+#endif
 		.be_hw_params_fixup = msm_be_hw_params_fixup,
 		.ignore_pmdown_time = 1,
 		.ignore_suspend = 1,
@@ -8433,8 +8433,8 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 				sizeof(msm_tasha_fe_dai_links));
 			total_links +=
 				ARRAY_SIZE(msm_tasha_fe_dai_links);
-		} else {
 #ifndef CONFIG_MACH_XIAOMI_GINKGO
+		} else {
 			memcpy(msm_sm6150_dai_links + total_links,
 				msm_bolero_fe_dai_links,
 				sizeof(msm_bolero_fe_dai_links));
