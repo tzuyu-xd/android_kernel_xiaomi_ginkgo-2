@@ -26,7 +26,7 @@
  ****************************************************************************************
  */
 #define TP_GESTURE_NAME          "tp_gesture"
-#define TP_GESTURE_LOG_ENABLE
+#define TP_GESTURE_LOG_ENABLE	  0
 #define TP_GESTURE_TAG           "LCT_TP_GESTURE"
 
 #ifdef TP_GESTURE_LOG_ENABLE
