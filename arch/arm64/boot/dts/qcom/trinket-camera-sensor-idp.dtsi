@@ -284,16 +284,15 @@
 		qcom,eeprom-src = <&eeprom0>;
 		qcom,led-flash-src = <&led_flash0>;
 		cam_vio-supply = <&L12A>;
-		cam_vana-supply = <&L3P>;
+		cam_vana-supply = <&cam_avdd_gpio_regulator>; /* 2.8v */
 		cam_vdig-supply = <&L2P>;
 		cam_clk-supply = <&camss_top_gdsc>;
 		cam_vaf-supply = <&L5P>;
-		cam_v_custom1 = <&cam_avdd_gpio_regulator>; /* 2.8v */
 		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig",
-				     "cam_clk", "cam_vaf", "cam_v_custom1";
-		qcom,cam-vreg-min-voltage = <1800000 2800000 1104000 0 2800000 2800000>;
-		qcom,cam-vreg-max-voltage = <1800000 2800000 1104000 0 2800000 2800000>;
-		qcom,cam-vreg-op-mode = <80000 80000 105000 0 100000 100000>;
+				     "cam_clk", "cam_vaf";
+		qcom,cam-vreg-min-voltage = <1800000 2800000 1104000 0 2800000>;
+		qcom,cam-vreg-max-voltage = <1800000 2800000 1104000 0 2800000>;
+		qcom,cam-vreg-op-mode = <80000 80000 105000 0 100000>;
 		qcom,gpio-no-mux = <0>;
 		pinctrl-names = "cam_default", "cam_suspend";
 		pinctrl-0 = <&cam_sensor_mclk0_active
