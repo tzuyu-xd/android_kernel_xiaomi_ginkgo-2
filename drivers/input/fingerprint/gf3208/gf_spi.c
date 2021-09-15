@@ -89,7 +89,7 @@ static DEFINE_MUTEX(device_list_lock);
 static struct wakeup_source fp_ws;
 static struct gf_dev gf;
 static int pid = -1;
-struct sock *nl_sk = NULL;
+static struct sock *nl_sk = NULL;
 extern int fpsensor;
 static struct proc_dir_entry *proc_entry;
 
@@ -128,7 +128,7 @@ struct gf_key_map maps[] = {
         { EV_KEY, KEY_KPENTER },
 };
 
-void sendnlmsg(char *message)
+static void sendnlmsg(char *message)
 {
 	struct sk_buff *skb_1;
 	struct nlmsghdr *nlh;
@@ -161,7 +161,7 @@ void sendnlmsg(char *message)
 	}
 }
 
-void nl_data_ready(struct sk_buff *__skb)
+static void nl_data_ready(struct sk_buff *__skb)
 {
 	struct sk_buff *skb;
 	struct nlmsghdr *nlh;
@@ -176,7 +176,7 @@ void nl_data_ready(struct sk_buff *__skb)
 	}
 }
 
-int netlink_init(void)
+static int netlink_init(void)
 {
 	struct netlink_kernel_cfg netlink_cfg;
 
@@ -196,7 +196,7 @@ int netlink_init(void)
 	return 0;
 }
 
-void netlink_exit(void)
+static void netlink_exit(void)
 {
 	if (nl_sk != NULL) {
 		netlink_kernel_release(nl_sk);
@@ -206,7 +206,7 @@ void netlink_exit(void)
 	pr_info("self module exited\n");
 }
 
-int gf_parse_dts(struct gf_dev *gf_dev)
+static int gf_parse_dts(struct gf_dev *gf_dev)
 {
 	int rc = 0;
 	struct device *dev = &gf_dev->spi->dev;
@@ -246,7 +246,7 @@ err_reset:
 	return rc;
 }
 
-void gf_cleanup(struct gf_dev *gf_dev)
+static void gf_cleanup(struct gf_dev *gf_dev)
 {
 	pr_info("[info] %s\n", __func__);
 
@@ -261,7 +261,7 @@ void gf_cleanup(struct gf_dev *gf_dev)
 	}
 }
 
-int gf_power_on(struct gf_dev *gf_dev)
+static int gf_power_on(struct gf_dev *gf_dev)
 {
 	int rc = 0;
 
@@ -270,7 +270,7 @@ int gf_power_on(struct gf_dev *gf_dev)
 	return rc;
 }
 
-int gf_power_off(struct gf_dev *gf_dev)
+static int gf_power_off(struct gf_dev *gf_dev)
 {
 	int rc = 0;
 
@@ -279,7 +279,7 @@ int gf_power_off(struct gf_dev *gf_dev)
 	return rc;
 }
 
-int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
+static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 {
 	if (gf_dev == NULL) {
 		pr_info("Input buff is NULL.\n");
@@ -295,7 +295,7 @@ int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 	return 0;
 }
 
-int gf_irq_num(struct gf_dev *gf_dev)
+static int gf_irq_num(struct gf_dev *gf_dev)
 {
 	if (gf_dev == NULL) {
 		pr_info("Input buff is NULL.\n");
