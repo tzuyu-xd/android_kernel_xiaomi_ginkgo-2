@@ -13,7 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 #define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/ioctl.h>
@@ -41,48 +43,53 @@
 #include <linux/pm_qos.h>
 #include <linux/cpufreq.h>
 #include <linux/mdss_io_util.h>
-//#include <linux/wakelock.h>
 #include <linux/proc_fs.h>
-#include "gf_spi.h"
 #include <linux/unistd.h>
-#include <linux/delay.h>
-#include <drm/drm_bridge.h>
 #include <linux/msm_drm_notify.h>
-
+#include <linux/time.h>
+#include <linux/types.h>
+#include <linux/workqueue.h>
 #if defined(USE_SPI_BUS)
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
 #elif defined(USE_PLATFORM_BUS)
 #include <linux/platform_device.h>
 #endif
+#include <drm/drm_bridge.h>
+#include <net/sock.h>
+#include <net/netlink.h>
 
-#define VER_MAJOR   1
-#define VER_MINOR   2
-#define PATCH_LEVEL 10
+#include "gf_spi.h"
 
+#define VER_MAJOR 		1
+#define VER_MINOR 		2
+#define PATCH_LEVEL 		10
 
-#define WAKELOCK_HOLD_TIME 2000 /* in ms */
-#define FP_UNLOCK_REJECTION_TIMEOUT (WAKELOCK_HOLD_TIME - 500)
-#define GF_SPIDEV_NAME     "goodix,fingerprint"
-/*device name after register in charater*/
-#define GF_DEV_NAME            "goodix_fp"
-#define	GF_INPUT_NAME	    "uinput-goodix"/*"goodix_fp" */
+#define WAKELOCK_HOLD_TIME 		2000 /* in ms */
+#define FP_UNLOCK_REJECTION_TIMEOUT 	(WAKELOCK_HOLD_TIME - 500)
 
-#define	CHRD_DRIVER_NAME	"goodix_fp_spi"
-#define	CLASS_NAME		    "goodix_fp"
+#define GF_SPIDEV_NAME 		"goodix,fingerprint"
+#define GF_DEV_NAME 		"goodix_fp"
+#define GF_INPUT_NAME 		"uinput-goodix" /* "goodix_fp" */
+#define CHRD_DRIVER_NAME 	"goodix_fp_spi"
+#define CLASS_NAME 		"goodix_fp"
 
-#define PROC_NAME  "hwinfo"
+#define NETLINK_TEST 		25
+#define MAX_MSGSIZE 		32
 
-#define N_SPI_MINORS		32	/* ... up to 256 */
+#define N_SPI_MINORS 		32	/* ... up to 256 */
+
+#define PROC_NAME 			"hwinfo"
+
 static int SPIDEV_MAJOR;
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
-//static struct wake_lock fp_wakelock;
-static struct wakeup_source fp_ws;//for kernel 4.9
+static struct wakeup_source fp_ws;
 static struct gf_dev gf;
-
+static int pid = -1;
+struct sock *nl_sk = NULL;
 extern int fpsensor;
 static struct proc_dir_entry *proc_entry;
 
@@ -117,10 +124,186 @@ struct gf_key_map maps[] = {
         { EV_KEY, KEY_CAMERA },
         { EV_KEY, KEY_F9 },
         { EV_KEY, KEY_F19 },
-        { EV_KEY, KEY_ENTER},
+        { EV_KEY, KEY_ENTER },
         { EV_KEY, KEY_KPENTER },
-
 };
+
+void sendnlmsg(char *message)
+{
+	struct sk_buff *skb_1;
+	struct nlmsghdr *nlh;
+	int len = NLMSG_SPACE(MAX_MSGSIZE);
+	int slen = 0;
+	int ret = 0;
+
+	if (!message || !nl_sk || !pid) {
+		return ;
+	}
+
+	skb_1 = alloc_skb(len,GFP_KERNEL);
+	if (!skb_1) {
+		pr_err("alloc_skb error\n");
+		return;
+	}
+
+	slen = strlen(message);
+	nlh = nlmsg_put(skb_1, 0, 0, 0, MAX_MSGSIZE, 0);
+
+	NETLINK_CB(skb_1).portid = 0;
+	NETLINK_CB(skb_1).dst_group = 0;
+
+	message[slen]= '\0';
+	memcpy(NLMSG_DATA(nlh), message, slen + 1);
+
+	ret = netlink_unicast(nl_sk,skb_1,pid,MSG_DONTWAIT);
+	if (!ret) {
+		pr_err("send msg from kernel to usespace failed ret 0x%x \n", ret);
+	}
+}
+
+void nl_data_ready(struct sk_buff *__skb)
+{
+	struct sk_buff *skb;
+	struct nlmsghdr *nlh;
+	char str[100];
+
+	skb = skb_get (__skb);
+	if (skb->len >= NLMSG_SPACE(0)) {
+		nlh = nlmsg_hdr(skb);
+		memcpy(str, NLMSG_DATA(nlh), sizeof(str));
+		pid = nlh->nlmsg_pid;
+		kfree_skb(skb);
+	}
+}
+
+int netlink_init(void)
+{
+	struct netlink_kernel_cfg netlink_cfg;
+
+	memset(&netlink_cfg, 0, sizeof(struct netlink_kernel_cfg));
+	netlink_cfg.groups = 0;
+	netlink_cfg.flags = 0;
+	netlink_cfg.input = nl_data_ready;
+	netlink_cfg.cb_mutex = NULL;
+
+	nl_sk = netlink_kernel_create(&init_net, NETLINK_TEST,
+			&netlink_cfg);
+	if (!nl_sk) {
+		pr_err("create netlink socket error\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+void netlink_exit(void)
+{
+	if (nl_sk != NULL) {
+		netlink_kernel_release(nl_sk);
+		nl_sk = NULL;
+	}
+
+	pr_info("self module exited\n");
+}
+
+int gf_parse_dts(struct gf_dev *gf_dev)
+{
+	int rc = 0;
+	struct device *dev = &gf_dev->spi->dev;
+	struct device_node *np = dev->of_node;
+
+	gf_dev->reset_gpio = of_get_named_gpio(np, "fp-gpio-reset", 0);
+	if (gf_dev->reset_gpio < 0) {
+		pr_err("falied to get reset gpio!\n");
+		return gf_dev->reset_gpio;
+	}
+
+	rc = devm_gpio_request(dev, gf_dev->reset_gpio, "goodix_reset");
+	if (rc) {
+		pr_err("failed to request reset gpio, rc = %d\n", rc);
+		goto err_reset;
+	}
+	printk("tyt reset_gpio=%d\n",gf_dev->reset_gpio);
+	gpio_direction_output(gf_dev->reset_gpio, 0);
+
+	gf_dev->irq_gpio = of_get_named_gpio(np, "fp-gpio-irq", 0);
+	if (gf_dev->irq_gpio < 0) {
+		pr_err("falied to get irq gpio!\n");
+		return gf_dev->irq_gpio;
+	}
+
+	rc = devm_gpio_request(dev, gf_dev->irq_gpio, "goodix_irq");
+	if (rc) {
+		pr_err("failed to request irq gpio, rc = %d\n", rc);
+		goto err_irq;
+	}
+	printk("tyt irq_gpio=%d\n",gf_dev->irq_gpio);
+	gpio_direction_input(gf_dev->irq_gpio);
+
+err_irq:
+	devm_gpio_free(dev, gf_dev->reset_gpio);
+err_reset:
+	return rc;
+}
+
+void gf_cleanup(struct gf_dev *gf_dev)
+{
+	pr_info("[info] %s\n", __func__);
+
+	if (gpio_is_valid(gf_dev->irq_gpio)) {
+		gpio_free(gf_dev->irq_gpio);
+		pr_info("remove irq_gpio success\n");
+	}
+
+	if (gpio_is_valid(gf_dev->reset_gpio)) {
+		gpio_free(gf_dev->reset_gpio);
+		pr_info("remove reset_gpio success\n");
+	}
+}
+
+int gf_power_on(struct gf_dev *gf_dev)
+{
+	int rc = 0;
+
+	/* TODO: add your power control here */
+
+	return rc;
+}
+
+int gf_power_off(struct gf_dev *gf_dev)
+{
+	int rc = 0;
+
+	/* TODO: add your power control here */
+
+	return rc;
+}
+
+int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
+{
+	if (gf_dev == NULL) {
+		pr_info("Input buff is NULL.\n");
+		return -1;
+	}
+
+	gpio_direction_output(gf_dev->reset_gpio, 1);
+	gpio_set_value(gf_dev->reset_gpio, 0);
+	mdelay(3);
+	gpio_set_value(gf_dev->reset_gpio, 1);
+	mdelay(delay_ms);
+
+	return 0;
+}
+
+int gf_irq_num(struct gf_dev *gf_dev)
+{
+	if (gf_dev == NULL) {
+		pr_info("Input buff is NULL.\n");
+		return -1;
+	} else {
+		return gpio_to_irq(gf_dev->irq_gpio);
+	}
+}
 
 static void gf_enable_irq(struct gf_dev *gf_dev)
 {
