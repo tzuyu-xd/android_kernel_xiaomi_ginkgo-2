@@ -34,7 +34,7 @@ export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 COMPILER=gcc
 
 # Get distro name
-DISTRO=$(cat /etc/issue)
+DISTRO=$(source /etc/os-release && echo ${NAME})
 
 # Get all cores of CPU
 PROCS=$(nproc --all)
