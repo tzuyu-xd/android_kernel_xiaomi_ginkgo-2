@@ -176,7 +176,7 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 	rc = devm_gpio_request(dev, gf_dev->reset_gpio, "goodix_reset");
 	if (rc) {
 		pr_err("failed to request reset gpio, rc = %d\n", rc);
-		goto err_reset;
+		return rc;
 	}
 	gpio_direction_output(gf_dev->reset_gpio, 0);
 
@@ -189,13 +189,10 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 	rc = devm_gpio_request(dev, gf_dev->irq_gpio, "goodix_irq");
 	if (rc) {
 		pr_err("failed to request irq gpio, rc = %d\n", rc);
-		goto err_irq;
+		devm_gpio_free(dev, gf_dev->reset_gpio);
 	}
 	gpio_direction_input(gf_dev->irq_gpio);
 
-err_irq:
-	devm_gpio_free(dev, gf_dev->reset_gpio);
-err_reset:
 	return rc;
 }
 
@@ -350,20 +347,16 @@ static int gf_open(struct inode *inode, struct file *filp)
 		if (gf_dev->users == 1) {
 			status = gf_parse_dts(gf_dev);
 			if (status)
-				goto err_parse_dt;
+				return status;
 
 			status = irq_setup(gf_dev);
 			if (status)
-				goto err_irq;
+				gf_cleanup(gf_dev);
 		}
 		gf_disable_irq(gf_dev);
 	} else
 		pr_info("No device for minor %d\n", iminor(inode));
 
-	return status;
-err_irq:
-	gf_cleanup(gf_dev);
-err_parse_dt:
 	return status;
 }
 
@@ -471,50 +464,42 @@ static int gf_probe(struct platform_device *pdev)
 	} else {
 		dev_dbg(&gf_dev->spi->dev, "no minor number available!\n");
 		status = -ENODEV;
-		goto error_hw;
+		gf_dev->device_available = 0;
+		return status;
 	}
-
       
 	if (status == 0) {
 		set_bit(minor, minors);
 		list_add(&gf_dev->device_entry, &device_list);
 	} else {
 		gf_dev->devt = 0;
-		goto error_hw;
+		gf_dev->device_available = 0;
+		return status;
 	}
   
 	gf_dev->input = input_allocate_device();
 	if (gf_dev->input == NULL) {
 		pr_err("%s, failed to allocate input device\n", __func__);
 		status = -ENOMEM;
-		goto error_dev;
+		if (gf_dev->devt != 0) {
+			pr_info("Err: status = %d\n", status);
+			list_del(&gf_dev->device_entry);
+			device_destroy(gf_class, gf_dev->devt);
+			clear_bit(MINOR(gf_dev->devt), minors);
+		}
 	}
 
 	gf_dev->input->name = GF_INPUT_NAME;
 	status = input_register_device(gf_dev->input);
 	if (status) {
 		pr_err("failed to register input device\n");
-		goto error_input;
+		if (gf_dev->input != NULL)
+			input_free_device(gf_dev->input);
 	}
 
 	gf_dev->notifier = goodix_noti_block;
 	msm_drm_register_client(&gf_dev->notifier);
 	wakeup_source_init(&fp_ws, "fp_ws");
-
-	return status;
-
-error_input:
-	if (gf_dev->input != NULL)
-		input_free_device(gf_dev->input);
-error_dev:
-	if (gf_dev->devt != 0) {
-		pr_info("Err: status = %d\n", status);
-		list_del(&gf_dev->device_entry);
-		device_destroy(gf_class, gf_dev->devt);
-		clear_bit(MINOR(gf_dev->devt), minors);
-	}
-error_hw:
-	gf_dev->device_available = 0;
 
 	return status;
 }
