@@ -39,11 +39,29 @@
 #include <net/netlink.h>
 #include <net/sock.h>
 
+typedef enum gf_key_event {
+	GF_KEY_NONE = 0,
+	GF_KEY_HOME,
+	GF_KEY_POWER,
+	GF_KEY_CAMERA,
+} gf_key_event_t;
+
+struct gf_key {
+	enum gf_key_event key;
+	uint32_t value;   /* key down = 1, key up = 0 */
+};
+
+struct gf_key_map {
+	unsigned int type;
+	unsigned int code;
+};
+
 #define GF_IOC_MAGIC    'g'     /* define magic number */
 #define GF_IOC_INIT             _IOR(GF_IOC_MAGIC, 0, uint8_t)
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ      _IO(GF_IOC_MAGIC, 4)
+#define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
 #define WAKELOCK_HOLD_TIME 		2000 /* in ms */
@@ -76,6 +94,13 @@ struct gf_dev {
 	char drm_black;
 	char wait_finger_down;
 	struct work_struct work;
+};
+
+struct gf_key_map maps[] = {
+        { EV_KEY, KEY_HOME },
+        { EV_KEY, KEY_POWER },
+        { EV_KEY, KEY_CAMERA },
+        { EV_KEY, KEY_KPENTER },
 };
 
 static int SPIDEV_MAJOR;
@@ -290,9 +315,41 @@ static void irq_cleanup(struct gf_dev *gf_dev)
 	free_irq(gf_dev->irq, gf_dev);
 }
 
+static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
+{
+	uint32_t key_input = 0;
+
+	if (gf_key->key == GF_KEY_HOME)
+		key_input = KEY_KPENTER;
+	else if (gf_key->key == GF_KEY_POWER)
+		key_input = KEY_KPENTER;
+	else if (gf_key->key == GF_KEY_CAMERA)
+		key_input = KEY_CAMERA;
+	else
+		/* add special key define */
+		key_input = gf_key->key;
+
+	pr_debug("%s: received key event[%d], key=%d, value=%d\n",
+			__func__, key_input, gf_key->key, gf_key->value);
+
+	if ((GF_KEY_POWER == gf_key->key || GF_KEY_CAMERA == gf_key->key)
+			&& (gf_key->value == 1)) {
+		input_report_key(gf_dev->input, key_input, 1);
+		input_sync(gf_dev->input);
+		input_report_key(gf_dev->input, key_input, 0);
+		input_sync(gf_dev->input);
+	}
+
+	if (gf_key->key == GF_KEY_HOME) {
+		input_report_key(gf_dev->input, key_input, gf_key->value);
+		input_sync(gf_dev->input);
+	}
+}
+
 static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct gf_dev *gf_dev = &gf;
+	struct gf_key gf_key;
 	int retval = 0;
 	u8 netlink_route = NETLINK_TEST;
 
@@ -312,6 +369,14 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case GF_IOC_RESET:
 		gf_hw_reset(gf_dev);
+		break;
+	case GF_IOC_INPUT_KEY_EVENT:
+		if (copy_from_user(&gf_key, (void __user *)arg, sizeof(struct gf_key))) {
+			pr_err("failed to copy input key event from user to kernel\n");
+			retval = -EFAULT;
+			break;
+		}
+		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
 	case GF_IOC_HAL_INITED_READY:
 		gf_dev->device_available = 1;
@@ -438,6 +503,7 @@ static int gf_probe(struct platform_device *pdev)
 	struct gf_dev *gf_dev = &gf;
 	int status = -EINVAL;
 	unsigned long minor;
+	int i;
 
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
@@ -488,6 +554,9 @@ static int gf_probe(struct platform_device *pdev)
 			clear_bit(MINOR(gf_dev->devt), minors);
 		}
 	}
+
+	for (i = 0; i < ARRAY_SIZE(maps); i++)
+		input_set_capability(gf_dev->input, maps[i].type, maps[i].code);
 
 	gf_dev->input->name = GF_INPUT_NAME;
 	status = input_register_device(gf_dev->input);
