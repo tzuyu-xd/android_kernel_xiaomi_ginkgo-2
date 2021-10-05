@@ -306,7 +306,7 @@ static void gf_cleanup(struct gf_dev *gf_dev)
 	}
 }
 
-static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
+static int gf_hw_reset(struct gf_dev *gf_dev)
 {
 	if (gf_dev == NULL) {
 		pr_info("Input buff is NULL.\n");
@@ -317,7 +317,7 @@ static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 	gpio_set_value(gf_dev->reset_gpio, 0);
 	mdelay(3);
 	gpio_set_value(gf_dev->reset_gpio, 1);
-	mdelay(delay_ms);
+	mdelay(3);
 
 	return 0;
 }
@@ -455,7 +455,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case GF_IOC_RESET:
 		pr_debug("%s GF_IOC_RESET\n", __func__);
-		gf_hw_reset(gf_dev, 3);
+		gf_hw_reset(gf_dev);
 		break;
 
 	case GF_IOC_INPUT_KEY_EVENT:
