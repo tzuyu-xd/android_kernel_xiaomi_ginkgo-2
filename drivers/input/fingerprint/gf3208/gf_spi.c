@@ -306,52 +306,6 @@ static void gf_cleanup(struct gf_dev *gf_dev)
 	}
 }
 
-static int gf_hw_reset(struct gf_dev *gf_dev)
-{
-	if (gf_dev == NULL) {
-		pr_info("Input buff is NULL.\n");
-		return -1;
-	}
-
-	gpio_direction_output(gf_dev->reset_gpio, 1);
-	gpio_set_value(gf_dev->reset_gpio, 0);
-	mdelay(3);
-	gpio_set_value(gf_dev->reset_gpio, 1);
-	mdelay(3);
-
-	return 0;
-}
-
-static int gf_irq_num(struct gf_dev *gf_dev)
-{
-	if (gf_dev == NULL) {
-		pr_info("Input buff is NULL.\n");
-		return -1;
-	} else {
-		return gpio_to_irq(gf_dev->irq_gpio);
-	}
-}
-
-static void gf_enable_irq(struct gf_dev *gf_dev)
-{
-	if (gf_dev->irq_enabled) {
-		pr_warn("IRQ has been enabled.\n");
-	} else {
-		enable_irq(gf_dev->irq);
-		gf_dev->irq_enabled = 1;
-	}
-}
-
-static void gf_disable_irq(struct gf_dev *gf_dev)
-{
-	if (gf_dev->irq_enabled) {
-		gf_dev->irq_enabled = 0;
-		disable_irq(gf_dev->irq);
-	} else {
-		pr_warn("IRQ has been disabled.\n");
-	}
-}
-
 static irqreturn_t gf_irq(int irq, void *handle)
 {
 	char msg = GF_NET_EVENT_IRQ;
@@ -372,7 +326,7 @@ static int irq_setup(struct gf_dev *gf_dev)
 {
 	int status;
 
-	gf_dev->irq = gf_irq_num(gf_dev);
+	gf_dev->irq = gpio_to_irq(gf_dev->irq_gpio);
 	status = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
 			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 			"gf", gf_dev);
@@ -445,17 +399,27 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case GF_IOC_DISABLE_IRQ:
 		pr_debug("%s GF_IOC_DISABEL_IRQ\n", __func__);
-		gf_disable_irq(gf_dev);
+		if (gf_dev->irq_enabled) {
+			disable_irq(gf_dev->irq);
+			gf_dev->irq_enabled = 0;
+		}
 		break;
 
 	case GF_IOC_ENABLE_IRQ:
 		pr_debug("%s GF_IOC_ENABLE_IRQ\n", __func__);
-		gf_enable_irq(gf_dev);
+		if (!gf_dev->irq_enabled) {
+			enable_irq(gf_dev->irq);
+			gf_dev->irq_enabled = 1;
+		}
 		break;
 
 	case GF_IOC_RESET:
 		pr_debug("%s GF_IOC_RESET\n", __func__);
-		gf_hw_reset(gf_dev);
+		gpio_direction_output(gf_dev->reset_gpio, 1);
+		gpio_set_value(gf_dev->reset_gpio, 0);
+		mdelay(3);
+		gpio_set_value(gf_dev->reset_gpio, 1);
+		mdelay(3);
 		break;
 
 	case GF_IOC_INPUT_KEY_EVENT:
@@ -519,7 +483,10 @@ static int gf_open(struct inode *inode, struct file *filp)
 				gf_cleanup(gf_dev);
 		}
 		//gf_hw_reset(gf_dev, 3);//reserve for timing sequence
-		gf_disable_irq(gf_dev);
+		if (gf_dev->irq_enabled) {
+			disable_irq(gf_dev->irq);
+			gf_dev->irq_enabled = 0;
+		}
 	} else {
 		pr_info("No device for minor %d\n", iminor(inode));
 	}
