@@ -53,7 +53,11 @@ static void set_boost_policy(int type)
 		return;
 	}
 
+#ifdef CONFIG_SCHED_WALT
 	if (min_possible_efficiency != max_possible_efficiency) {
+#else
+	if (CONFIG_ARCH_QCOM) {
+#endif
 		boost_policy = SCHED_BOOST_ON_BIG;
 		return;
 	}
@@ -73,13 +77,17 @@ static void sched_no_boost_nop(void)
 static void sched_full_throttle_boost_enter(void)
 {
 	core_ctl_set_boost(true);
+#ifdef CONFIG_SCHED_WALT
 	walt_enable_frequency_aggregation(true);
+#endif
 }
 
 static void sched_full_throttle_boost_exit(void)
 {
 	core_ctl_set_boost(false);
+#ifdef CONFIG_SCHED_WALT
 	walt_enable_frequency_aggregation(false);
+#endif
 }
 
 static void sched_conservative_boost_enter(void)
@@ -94,12 +102,16 @@ static void sched_conservative_boost_exit(void)
 
 static void sched_restrained_boost_enter(void)
 {
+#ifdef CONFIG_SCHED_WALT
 	walt_enable_frequency_aggregation(true);
+#endif
 }
 
 static void sched_restrained_boost_exit(void)
 {
+#ifdef CONFIG_SCHED_WALT
 	walt_enable_frequency_aggregation(false);
+#endif
 }
 
 struct sched_boost_data {

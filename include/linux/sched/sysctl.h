@@ -38,13 +38,10 @@ extern unsigned int sysctl_sched_use_walt_cpu_util;
 extern unsigned int sysctl_sched_use_walt_task_util;
 extern unsigned int sysctl_sched_walt_init_task_load_pct;
 extern unsigned int sysctl_sched_cpu_high_irqload;
-extern unsigned int sysctl_sched_boost;
 extern unsigned int sysctl_sched_group_upmigrate_pct;
 extern unsigned int sysctl_sched_group_downmigrate_pct;
 extern unsigned int sysctl_sched_many_wakeup_threshold;
 extern unsigned int sysctl_sched_walt_rotate_big_tasks;
-extern unsigned int sysctl_sched_min_task_util_for_boost;
-extern unsigned int sysctl_sched_min_task_util_for_colocation;
 extern unsigned int sysctl_sched_little_cluster_coloc_fmin_khz;
 
 extern int
@@ -53,6 +50,9 @@ walt_proc_update_handler(struct ctl_table *table, int write,
 			 loff_t *ppos);
 
 #endif
+extern unsigned int sysctl_sched_boost;
+extern unsigned int sysctl_sched_min_task_util_for_boost;
+extern unsigned int sysctl_sched_min_task_util_for_colocation;
 
 #if defined(CONFIG_PREEMPT_TRACER) || defined(CONFIG_DEBUG_PREEMPT)
 extern unsigned int sysctl_preemptoff_tracing_threshold_ns;

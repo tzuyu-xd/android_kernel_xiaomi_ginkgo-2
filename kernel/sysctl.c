@@ -363,15 +363,6 @@ static struct ctl_table kern_table[] = {
 		.extra2		= &sysctl_sched_group_upmigrate_pct,
 	},
 	{
-		.procname	= "sched_boost",
-		.data		= &sysctl_sched_boost,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= sched_boost_handler,
-		.extra1		= &neg_three,
-		.extra2		= &three,
-	},
-	{
 		.procname	= "sched_many_wakeup_threshold",
 		.data		= &sysctl_sched_many_wakeup_threshold,
 		.maxlen		= sizeof(unsigned int),
@@ -388,6 +379,25 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 		.extra2		= &one,
+	},
+	{
+		.procname	= "sched_little_cluster_coloc_fmin_khz",
+		.data		= &sysctl_sched_little_cluster_coloc_fmin_khz,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sched_little_cluster_coloc_fmin_khz_handler,
+		.extra1		= &zero,
+		.extra2		= &two_million,
+	},
+#endif
+	{
+		.procname	= "sched_boost",
+		.data		= &sysctl_sched_boost,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sched_boost_handler,
+		.extra1		= &neg_three,
+		.extra2		= &three,
 	},
 	{
 		.procname	= "sched_min_task_util_for_boost",
@@ -407,16 +417,6 @@ static struct ctl_table kern_table[] = {
 		.extra1		= &zero,
 		.extra2		= &one_thousand,
 	},
-	{
-		.procname	= "sched_little_cluster_coloc_fmin_khz",
-		.data		= &sysctl_sched_little_cluster_coloc_fmin_khz,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= sched_little_cluster_coloc_fmin_khz_handler,
-		.extra1		= &zero,
-		.extra2		= &two_million,
-	},
-#endif
 	{
 		.procname	= "sched_upmigrate_nosys",
 		.data		= &sysctl_sched_capacity_margin_up,

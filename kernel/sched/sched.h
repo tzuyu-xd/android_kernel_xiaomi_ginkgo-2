@@ -2572,6 +2572,10 @@ enum sched_boost_policy {
 #define FULL_THROTTLE_BOOST 1
 #define CONSERVATIVE_BOOST 2
 #define RESTRAINED_BOOST 3
+#define FULL_THROTTLE_BOOST_DISABLE -1
+#define CONSERVATIVE_BOOST_DISABLE -2
+#define RESTRAINED_BOOST_DISABLE -3
+#define MAX_NUM_BOOST_TYPE (RESTRAINED_BOOST+1)
 
 /*
  * Returns the rq capacity of any rq in a group. This does not play
@@ -2647,11 +2651,6 @@ extern int update_preferred_cluster(struct related_thread_group *grp,
 			struct task_struct *p, u32 old_load);
 extern void set_preferred_cluster(struct related_thread_group *grp);
 extern void add_new_task_to_grp(struct task_struct *new);
-
-#define FULL_THROTTLE_BOOST_DISABLE -1
-#define CONSERVATIVE_BOOST_DISABLE -2
-#define RESTRAINED_BOOST_DISABLE -3
-#define MAX_NUM_BOOST_TYPE (RESTRAINED_BOOST+1)
 
 static inline int cpu_capacity(int cpu)
 {
@@ -2871,18 +2870,6 @@ static inline int same_freq_domain(int src_cpu, int dst_cpu)
 
 #define	CPU_RESERVED	1
 
-extern enum sched_boost_policy boost_policy;
-static inline enum sched_boost_policy sched_boost_policy(void)
-{
-	return boost_policy;
-}
-
-extern unsigned int sched_boost_type;
-static inline int sched_boost(void)
-{
-	return sched_boost_type;
-}
-
 extern int preferred_cluster(struct sched_cluster *cluster,
 						struct task_struct *p);
 extern struct sched_cluster *rq_cluster(struct rq *rq);
@@ -2890,25 +2877,13 @@ extern void reset_task_stats(struct task_struct *p);
 extern void clear_top_tasks_bitmap(unsigned long *bitmap);
 
 #if defined(CONFIG_SCHED_TUNE)
-extern bool task_sched_boost(struct task_struct *p);
 extern int sync_cgroup_colocation(struct task_struct *p, bool insert);
 extern bool schedtune_task_colocated(struct task_struct *p);
-extern void update_cgroup_boost_settings(void);
-extern void restore_cgroup_boost_settings(void);
-
 #else
 static inline bool schedtune_task_colocated(struct task_struct *p)
 {
 	return false;
 }
-
-static inline bool task_sched_boost(struct task_struct *p)
-{
-	return true;
-}
-
-static inline void update_cgroup_boost_settings(void) { }
-static inline void restore_cgroup_boost_settings(void) { }
 #endif
 
 extern int alloc_related_thread_groups(void);
@@ -2959,7 +2934,6 @@ extern unsigned long thermal_cap(int cpu);
 extern void clear_walt_request(int cpu);
 
 extern enum sched_boost_policy sched_boost_policy(void);
-extern void sched_boost_parse_dt(void);
 extern void clear_ed_task(struct task_struct *p, struct rq *rq);
 extern bool early_detection_notify(struct rq *rq, u64 wallclock);
 
@@ -2969,38 +2943,6 @@ static inline unsigned int power_cost(int cpu, u64 demand)
 }
 
 void note_task_waking(struct task_struct *p, u64 wallclock);
-
-static inline bool task_placement_boost_enabled(struct task_struct *p)
-{
-	if (likely(sched_boost_policy() == SCHED_BOOST_NONE))
-		return false;
-
-	return task_sched_boost(p);
-}
-
-static inline enum sched_boost_policy task_boost_policy(struct task_struct *p)
-{
-	enum sched_boost_policy policy = sched_boost_policy();
-
-	if (likely(policy == SCHED_BOOST_NONE))
-		return SCHED_BOOST_NONE;
-
-	if (!task_sched_boost(p))
-		return SCHED_BOOST_NONE;
-
-	if (policy == SCHED_BOOST_ON_BIG) {
-		/*
-		 * Filter out tasks less than min task util threshold
-		 * under conservative boost.
-		 */
-		if (sched_boost() == CONSERVATIVE_BOOST &&
-				task_util(p) <=
-				sysctl_sched_min_task_util_for_boost)
-			policy = SCHED_BOOST_NONE;
-	}
-
-	return policy;
-}
 
 extern void walt_map_freq_to_load(void);
 extern void walt_update_min_max_capacity(void);
@@ -3016,27 +2958,7 @@ struct walt_sched_stats;
 struct related_thread_group;
 struct sched_cluster;
 
-static inline bool task_sched_boost(struct task_struct *p)
-{
-	return false;
-}
-
-static inline bool task_placement_boost_enabled(struct task_struct *p)
-{
-	return false;
-}
-
 static inline void check_for_migration(struct rq *rq, struct task_struct *p) { }
-
-static inline int sched_boost(void)
-{
-	return 0;
-}
-
-static inline enum sched_boost_policy task_boost_policy(struct task_struct *p)
-{
-	return SCHED_BOOST_NONE;
-}
 
 static inline bool
 task_in_cum_window_demand(struct rq *rq, struct task_struct *p)
@@ -3127,13 +3049,6 @@ static inline int is_reserved(int cpu)
 	return 0;
 }
 
-static inline enum sched_boost_policy sched_boost_policy(void)
-{
-	return SCHED_BOOST_NONE;
-}
-
-static inline void sched_boost_parse_dt(void) { }
-
 static inline void clear_ed_task(struct task_struct *p, struct rq *rq) { }
 
 static inline bool early_detection_notify(struct rq *rq, u64 wallclock)
@@ -3152,6 +3067,66 @@ static inline void note_task_waking(struct task_struct *p, u64 wallclock) { }
 static inline void walt_map_freq_to_load(void) { }
 static inline void walt_update_min_max_capacity(void) { }
 #endif	/* CONFIG_SCHED_WALT */
+
+#if defined(CONFIG_SCHED_TUNE)
+extern bool task_sched_boost(struct task_struct *p);
+extern void update_cgroup_boost_settings(void);
+extern void restore_cgroup_boost_settings(void);
+#else
+static inline bool task_sched_boost(struct task_struct *p)
+{
+	return true;
+}
+
+static inline void update_cgroup_boost_settings(void) { }
+static inline void restore_cgroup_boost_settings(void) { }
+#endif
+
+extern enum sched_boost_policy boost_policy;
+static inline enum sched_boost_policy sched_boost_policy(void)
+{
+	return boost_policy;
+}
+
+extern unsigned int sched_boost_type;
+static inline int sched_boost(void)
+{
+	return sched_boost_type;
+}
+
+extern void sched_boost_parse_dt(void);
+
+static inline bool task_placement_boost_enabled(struct task_struct *p)
+{
+	if (likely(sched_boost_policy() == SCHED_BOOST_NONE))
+		return false;
+
+	return task_sched_boost(p);
+}
+
+static inline enum sched_boost_policy task_boost_policy(struct task_struct *p)
+{
+	enum sched_boost_policy policy = sched_boost_policy();
+
+	if (likely(policy == SCHED_BOOST_NONE))
+		return SCHED_BOOST_NONE;
+
+	if (!task_sched_boost(p))
+		return SCHED_BOOST_NONE;
+
+	if (policy == SCHED_BOOST_ON_BIG) {
+		/*
+		 * Filter out tasks less than min task util threshold
+		 * under conservative boost.
+		 */
+		if (sched_boost() == CONSERVATIVE_BOOST &&
+				task_util(p) <=
+				sysctl_sched_min_task_util_for_boost)
+		    policy = SCHED_BOOST_NONE;
+	}
+
+	return policy;
+}
 
 struct sched_avg_stats {
 	int nr;
