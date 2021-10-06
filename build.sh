@@ -117,12 +117,7 @@ compile() {
 		make -j"$PROCS" O=out \
 				CROSS_COMPILE=aarch64-linux-gnu- \
 				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-				CC=clang \
-				AR=llvm-ar \
-				NM=llvm-nm \
-				LD=ld.lld \
-				OBJDUMP=llvm-objdump \
-				STRIP=llvm-strip
+				LLVM=1
 	elif [[ $COMPILER == "gcc" ]]; then
 		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-eabi-
 		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-elf-
