@@ -55,7 +55,7 @@ COMMIT_HEAD=$(git log --oneline -1)
 
 # Set function for telegram
 tg_post_msg() {
-	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$2" \
+	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
 	-d "disable_web_page_preview=true" \
 	-d "parse_mode=html" \
 	-d text="$1"
@@ -67,10 +67,10 @@ tg_post_build() {
 
 	# Show the Checksum alongwith caption
 	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
-	-F chat_id="$2"  \
+	-F chat_id="$CHATID"  \
 	-F "disable_web_page_preview=true" \
 	-F "parse_mode=html" \
-	-F caption="$3 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"  
+	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
 }
 
 # Set function for cloning repository
@@ -110,7 +110,7 @@ set_naming() {
 # Set function for starting compile
 compile() {
 	echo -e "Kernel compilation starting"
-	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8 (ginkgo)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal" "$CHATID"
+	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8 (ginkgo)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
 	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
@@ -130,7 +130,7 @@ compile() {
 	elif ! [ -f "$IMG_DIR"/Image.gz-dtb ]
 	then
 		echo -e "Kernel compilation failed"
-		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>" "$CHATID"
+		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
 		exit 1
 	fi
 }
@@ -148,7 +148,7 @@ gen_zip() {
 	# Prepare a final zip variable
 	ZIP_FINAL="$ZIP_NAME"
 
-	tg_post_build "$ZIP_FINAL" "$CHATID" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+	tg_post_build "$ZIP_FINAL" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
 	cd ..
 }
 
