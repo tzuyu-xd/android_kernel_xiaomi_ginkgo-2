@@ -31,7 +31,7 @@ export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 # Set if do you use GCC or clang compiler
 # Default is clang compiler
 #
-COMPILER=clang
+COMPILER=gcc
 
 # Get distro name
 DISTRO=$(source /etc/os-release && echo ${NAME})
