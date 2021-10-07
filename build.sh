@@ -143,7 +143,7 @@ gen_zip() {
 	cd AnyKernel3 || exit
 
 	# Archive to flashable zip
-	zip -r9 "$ZIP_NAME" * -x .git README.md
+	zip -r9 "$ZIP_NAME" * -x .git README.md *.zip
 
 	# Prepare a final zip variable
 	ZIP_FINAL="$ZIP_NAME"
