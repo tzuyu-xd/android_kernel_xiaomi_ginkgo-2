@@ -15,13 +15,3 @@
 &pmi632_pwm {
 	qcom,lut-patterns = <50 50 49 47 45 42 39 35 31 27 22 17 11 6  0 0 0 0 0 0 0>;
 };
-
-&flash_led {
-	qcom,flashlight_0 {
-		label = "flashlight";
-		qcom,led-name = "flashlight";
-		qcom,torch-name = "led:torch_0", "led:torch_1";
-		qcom,switch-name = "led:switch_0";
-		qcom,id = <0>;
-	};
-};
