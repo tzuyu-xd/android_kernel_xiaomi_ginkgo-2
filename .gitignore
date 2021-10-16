@@ -134,4 +134,6 @@ Android.bp
 # Ignore some my dir
 AnyKernel3/
 clang/
+gcc64/
+gcc32/
 out/
