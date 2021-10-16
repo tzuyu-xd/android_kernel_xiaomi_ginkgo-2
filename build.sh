@@ -145,10 +145,22 @@ compile() {
 	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
-		make -j"$PROCS" O=out \
-				CROSS_COMPILE=aarch64-linux-gnu- \
-				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-				LLVM=1
+		if [[ $LOCALBUILD == "1" ]]; then
+			make -j"$PROCS" O=out \
+					CROSS_COMPILE=aarch64-linux-gnu- \
+					CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+					CC=clang \
+					AR=llvm-ar \
+					NM=llvm-nm \
+					LD=ld.lld \
+					OBJDUMP=llvm-objdump \
+					STRIP=llvm-strip
+		else
+			make -j"$PROCS" O=out \
+					CROSS_COMPILE=aarch64-linux-gnu- \
+					CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+					LLVM=1
+		fi
 	elif [[ $COMPILER == "gcc" ]]; then
 		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-linux-gnueabi-
 		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-linux-gnu-
