@@ -61,7 +61,7 @@ then
 	echo -e "Detected my local dir"
 	LOCALBUILD=1
 	# Switch to Clang if detected my local dir
-	COMPILER=clang
+	COMPILER=gcc
 	export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
 else
 	echo -e "Detected not my local dir"
