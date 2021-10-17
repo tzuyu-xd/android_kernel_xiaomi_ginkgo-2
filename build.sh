@@ -182,6 +182,12 @@ compile() {
 
 # Set function for zipping into a flashable zip
 gen_zip() {
+	if [[ $LOCALBUILD == "1" ]]; then
+		cd AnyKernel3 || exit
+		rm -rf dtbo.img Image.gz-dtb *.zip
+		cd ..
+	fi
+
 	# Move kernel and DTBO image to AnyKernel3
 	mv "$IMG_DIR"/Image.gz-dtb AnyKernel3/Image.gz-dtb
 	mv "$IMG_DIR"/dtbo.img AnyKernel3/dtbo.img
