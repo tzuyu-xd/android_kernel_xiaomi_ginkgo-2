@@ -61,12 +61,9 @@ then
 	LOCALBUILD=1
 	# Switch to Clang if detected my local dir
 	COMPILER=clang
-	export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
 else
 	echo -e "Detected not my local dir"
 	LOCALBUILD=0
-	export KBUILD_BUILD_VERSION="1"
-	export KBUILD_BUILD_HOST="DroneCI"
 fi
 
 # Set function for telegram
@@ -87,6 +84,16 @@ tg_post_build() {
 	-F "disable_web_page_preview=true" \
 	-F "parse_mode=html" \
 	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
+}
+
+# Set function for export some environments
+export_env() {
+	if [[ $LOCALBUILD == "1" ]]; then
+		export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
+	else
+		export KBUILD_BUILD_VERSION="1"
+		export KBUILD_BUILD_HOST="DroneCI"
+	fi
 }
 
 # Set function for disable GCC optimizations
@@ -213,12 +220,14 @@ gen_zip() {
 }
 
 if [[ $LOCALBUILD == "1" ]]; then
+	export_env
 	disable_config
 	exporting_tc
 	compile
 	set_naming
 	gen_zip
 else
+	export_env
 	clone
 	exporting_tc
 	compile
