@@ -20,7 +20,6 @@ DEFCONFIG=vendor/ginkgo-perf_defconfig
 # Set environment for etc.
 export ARCH=arm64
 export SUBARCH=arm64
-export KBUILD_BUILD_VERSION="1"
 export KBUILD_BUILD_USER="FiqriArdyansyah"
 
 # Set environment for telegram
@@ -66,6 +65,7 @@ then
 else
 	echo -e "Detected not my local dir"
 	LOCALBUILD=0
+	export KBUILD_BUILD_VERSION="1"
 	export KBUILD_BUILD_HOST="DroneCI"
 fi
 
