@@ -178,6 +178,10 @@ compile() {
 		fi
 		exit 1
 	fi
+
+	if [[ $LOCALBUILD == "1" ]]; then
+		git checkout -- arch/arm64/configs/vendor/ginkgo-perf_defconfig
+	fi
 }
 
 # Set function for zipping into a flashable zip
