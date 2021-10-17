@@ -17,16 +17,10 @@ IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot
 # Get defconfig file
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
-# Set environment for etc.
+# Set common environment
 export ARCH=arm64
 export SUBARCH=arm64
 export KBUILD_BUILD_USER="FiqriArdyansyah"
-
-# Set environment for telegram
-export CHATID="-1001428085807"
-export token=$TELEGRAM_TOKEN
-export BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
-export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 
 #
 # Set if do you use GCC or clang compiler
@@ -93,6 +87,11 @@ export_env() {
 	else
 		export KBUILD_BUILD_VERSION="1"
 		export KBUILD_BUILD_HOST="DroneCI"
+		# Set environment for telegram
+		export CHATID="-1001428085807"
+		export token=$TELEGRAM_TOKEN
+		export BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
+		export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 	fi
 }
 
