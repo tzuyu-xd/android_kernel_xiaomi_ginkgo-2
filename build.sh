@@ -92,7 +92,10 @@ tg_post_build() {
 # Set function for disable GCC optimizations
 disable_config() {
 	sed -i 's/CONFIG_LTO_GCC=y/CONFIG_LTO_GCC=n/g' arch/arm64/configs/vendor/ginkgo-perf_defconfig
-	sed -i 's/CONFIG_GCC_GRAPHITE=y/CONFIG_GCC_GRAPHITE=n/g' arch/arm64/configs/vendor/ginkgo-perf_defconfig
+
+	if [[ $COMPILER == "clang" ]]; then
+		sed -i 's/CONFIG_GCC_GRAPHITE=y/CONFIG_GCC_GRAPHITE=n/g' arch/arm64/configs/vendor/ginkgo-perf_defconfig
+	fi
 }
 
 # Set function for cloning repository
