@@ -7,6 +7,9 @@
 # Based on Panchajanya1999 script.
 #
 
+# My local dir path
+LOCALPATH="/home/fiqri"
+
 # Set environment for directory
 KERNEL_DIR=$PWD
 IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot
@@ -19,7 +22,6 @@ export ARCH=arm64
 export SUBARCH=arm64
 export KBUILD_BUILD_VERSION="1"
 export KBUILD_BUILD_USER="FiqriArdyansyah"
-export KBUILD_BUILD_HOST="DroneCI"
 
 # Set environment for telegram
 export CHATID="-1001428085807"
@@ -53,6 +55,20 @@ KERVER=$(make kernelversion)
 # Get last commit
 COMMIT_HEAD=$(git log --oneline -1)
 
+# Checking directory path
+if [ -d "$LOCALPATH" ]
+then
+	echo -e "Detected my local dir"
+	LOCALBUILD=1
+	# Switch to Clang if detected my local dir
+	COMPILER=clang
+	export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
+else
+	echo -e "Detected not my local dir"
+	LOCALBUILD=0
+	export KBUILD_BUILD_HOST="DroneCI"
+fi
+
 # Set function for telegram
 tg_post_msg() {
 	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
@@ -73,6 +89,12 @@ tg_post_build() {
 	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
 }
 
+# Set function for disable GCC optimizations
+disable_config() {
+	sed -i 's/CONFIG_LTO_GCC=y/CONFIG_LTO_GCC=n/g' arch/arm64/configs/vendor/ginkgo-perf_defconfig
+	sed -i 's/CONFIG_GCC_GRAPHITE=y/CONFIG_GCC_GRAPHITE=n/g' arch/arm64/configs/vendor/ginkgo-perf_defconfig
+}
+
 # Set function for cloning repository
 clone() {
 	# Clone AnyKernel3
@@ -81,15 +103,22 @@ clone() {
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
 		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+	elif [[ $COMPILER == "gcc" ]]; then
+		# Clone GCC ARM64 and ARM32
+		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc64
+		git clone https://github.com/fiqri19102002/arm-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc32
+	fi	
+}
+
+# Set function for export path and compiler strings
+exporting_tc() {
+	if [[ $COMPILER == "clang" ]]; then
 		# Set environment for clang
 		TC_DIR=$KERNEL_DIR/clang
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
-		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc64
-		git clone https://github.com/fiqri19102002/arm-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc32
 		# Set environment for GCC ARM64 and ARM32
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
@@ -97,7 +126,7 @@ clone() {
 		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-linux-gnu-gcc --version | head -n 1)
 		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 	fi
-	
+
 	export PATH KBUILD_COMPILER_STRING
 }
 
@@ -110,7 +139,9 @@ set_naming() {
 # Set function for starting compile
 compile() {
 	echo -e "Kernel compilation starting"
-	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8 (ginkgo)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
+	if [[ $LOCALBUILD == "0" ]]; then
+		tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8 (ginkgo)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
+	fi
 	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
@@ -130,7 +161,9 @@ compile() {
 	elif ! [ -f "$IMG_DIR"/Image.gz-dtb ]
 	then
 		echo -e "Kernel compilation failed"
-		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
+		if [[ $LOCALBUILD == "0" ]]; then
+			tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
+		fi
 		exit 1
 	fi
 }
@@ -148,11 +181,22 @@ gen_zip() {
 	# Prepare a final zip variable
 	ZIP_FINAL="$ZIP_NAME"
 
-	tg_post_build "$ZIP_FINAL" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+	if [[ $LOCALBUILD == "0" ]]; then
+		tg_post_build "$ZIP_FINAL" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+	fi
 	cd ..
 }
 
-clone
-compile
-set_naming
-gen_zip
+if [[ $LOCALBUILD == "1" ]]; then
+	disable_config
+	exporting_tc
+	compile
+	set_naming
+	gen_zip
+else
+	clone
+	exporting_tc
+	compile
+	set_naming
+	gen_zip
+fi
