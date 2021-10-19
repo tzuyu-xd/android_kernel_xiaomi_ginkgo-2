@@ -2916,7 +2916,6 @@ static int wcd_cpe_send_param_snd_model(struct wcd_cpe_core *core,
 	}
 
 	obm_msg.pld.version = 0;
-	obm_msg.hdr.hdr_info = 0;
 	obm_msg.pld.size = session->snd_model_size;
 	obm_msg.pld.data_ptr.kvaddr = session->snd_model_data;
 	obm_msg.pld.mem_handle = session->lsm_mem_handle;
@@ -3605,8 +3604,6 @@ static int wcd_cpe_lsm_eob(
 {
 	int ret = 0;
 	struct cmi_hdr lab_eob;
-
-	lab_eob.hdr_info = 0;
 
 	if (fill_lsm_cmd_header_v0_inband(&lab_eob, session->id,
 		0, CPE_LSM_SESSION_CMD_EOB)) {
