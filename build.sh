@@ -114,8 +114,8 @@ clone() {
 		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc64
-		git clone https://github.com/fiqri19102002/arm-gcc.git -b gnu-gcc-11-tarballs --depth=1 gcc32
+		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc64
+		git clone https://github.com/fiqri19102002/arm-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc32
 	fi	
 }
 
@@ -132,7 +132,7 @@ exporting_tc() {
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
 		# Get path and compiler string
-		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-linux-gnu-gcc --version | head -n 1)
+		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
 		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 	fi
 
@@ -171,8 +171,8 @@ compile() {
 					LLVM=1
 		fi
 	elif [[ $COMPILER == "gcc" ]]; then
-		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-linux-gnueabi-
-		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-linux-gnu-
+		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-eabi-
+		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-elf-
 	fi
 	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
