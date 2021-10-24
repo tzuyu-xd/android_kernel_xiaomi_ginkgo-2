@@ -747,13 +747,13 @@ static int32_t msm_sensor_driver_is_special_support(
 }
 
 #ifdef CONFIG_MACH_XIAOMI_GINKGO
-static struct kobject *msm_sensor_device=NULL;
+static struct kobject *msm_sensor_device = NULL;
+static struct kobject *msm_sensorid_device = NULL;
 static char module_info[256] = {0};
+static char sensor_fusion_id[200] = {0};
 
-void msm_sensor_set_module_info(struct msm_sensor_ctrl_t *s_ctrl)
+static void msm_sensor_set_module_info(struct msm_sensor_ctrl_t *s_ctrl)
 {
-	printk(" s_ctrl->sensordata->camera_type = %d\n", s_ctrl->sensordata->sensor_info->position);
-
 	switch (s_ctrl->sensordata->sensor_info->position) {
 		case BACK_CAMERA_B:
 			strcat(module_info, "back: ");
@@ -790,11 +790,10 @@ static ssize_t msm_sensor_module_id_show(struct device *dev,
 }
 static DEVICE_ATTR(sensor, 0444, msm_sensor_module_id_show, NULL);
 
-int32_t msm_sensor_init_device_name(void)
+static int32_t msm_sensor_init_device_name(void)
 {
 	int32_t rc = 0;
 
-	CDBG("%s %d\n", __func__,__LINE__);
 	if (msm_sensor_device != NULL) {
 		CDBG("Macle android_camera already created\n");
 		return 0;
@@ -813,20 +812,18 @@ int32_t msm_sensor_init_device_name(void)
 		kobject_del(msm_sensor_device);
 	}
 
-	return 0 ;
+	return 0;
 }
 
 static uint16_t msm_sensor_get_sensor_id_ginkgo_ov13855(struct msm_sensor_ctrl_t *s_ctrl,
-										char *sensor_fusion_id)
+							char *sensor_fusion_id)
 {
+	struct msm_camera_i2c_client *sensor_i2c_client;
 	int rc = 0;
 	int i = 0;
 	uint16_t sensorid[16] = {0};
 	uint16_t temp = 0;
 	uint32_t start_add = 0x7000;
-	struct msm_camera_i2c_client *sensor_i2c_client;
-
-	CDBG("%s:%d E \n", __func__, __LINE__);
 
 	sensor_i2c_client = s_ctrl->sensor_i2c_client;
 
@@ -876,7 +873,7 @@ static uint16_t msm_sensor_get_sensor_id_ginkgo_ov13855(struct msm_sensor_ctrl_t
 	sensor_i2c_client->i2c_func_tbl->i2c_read(
 		sensor_i2c_client,start_add,
 		&sensorid[i], MSM_CAMERA_I2C_BYTE_DATA);
-		CDBG("%s:read from start_add %x sensrid[%d] %d\n", __func__,start_add,i,sensorid[i]);
+		CDBG("%s:read from start_add %x sensrid[%d] %d\n", __func__, start_add, i, sensorid[i]);
 		start_add += 1;
 	}
 
@@ -904,15 +901,14 @@ static uint16_t msm_sensor_get_sensor_id_ginkgo_ov13855(struct msm_sensor_ctrl_t
 }
 
 static uint16_t msm_sensor_get_sensor_id_ginkgo_s5kgm1(struct msm_sensor_ctrl_t *s_ctrl,
-								char *sensor_fusion_id)
+							char *sensor_fusion_id)
 {
+	struct msm_camera_i2c_client *sensor_i2c_client;
 	int rc = 0;
 	int i = 0;
 	uint16_t sensorid[16] = {0};
 	uint32_t start_add = 0x0A24;
-	struct msm_camera_i2c_client *sensor_i2c_client;
 
-	pr_err("%s:%d E \n", __func__, __LINE__);
 	sensor_i2c_client = s_ctrl->sensor_i2c_client;
 
 	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
@@ -937,7 +933,7 @@ static uint16_t msm_sensor_get_sensor_id_ginkgo_s5kgm1(struct msm_sensor_ctrl_t 
 	rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
 		sensor_i2c_client,start_add,
 		&sensorid[i], MSM_CAMERA_I2C_BYTE_DATA);
-		CDBG("%s:read from start_add %x sensrid[%d] %d\n", __func__,start_add,i,sensorid[i]);
+		CDBG("%s:read from start_add %x sensrid[%d] %d\n", __func__, start_add, i, sensorid[i]);
 		start_add += 1;
 	}
 
@@ -955,14 +951,10 @@ static uint16_t msm_sensor_get_sensor_id_ginkgo_s5kgm1(struct msm_sensor_ctrl_t 
 	return rc;
 }
 
-static struct kobject *msm_sensorid_device = NULL;
-static char sensor_fusion_id[200] = {0};
-
-void msm_sensor_set_sensor_id(struct msm_sensor_ctrl_t *s_ctrl)
+static void msm_sensor_set_sensor_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
-	char  sensor_fusion_id_tmp[90] = {0};
+	char sensor_fusion_id_tmp[90] = {0};
 	int rc = 0;
-	CDBG("s_ctrl->sensordata->camera_type = %d\n", s_ctrl->sensordata->sensor_info->position);
 
 	switch (s_ctrl->sensordata->sensor_info->position) {
 		case BACK_CAMERA_B:
@@ -981,17 +973,19 @@ void msm_sensor_set_sensor_id(struct msm_sensor_ctrl_t *s_ctrl)
 
     if ((!strcmp("ginkgo_s5kgm1_sunny_i", s_ctrl->sensordata->sensor_name)) || 
 	    (!strcmp("ginkgo_s5kgm1_ofilm_ii", s_ctrl->sensordata->sensor_name))) {
-		rc = msm_sensor_get_sensor_id_ginkgo_s5kgm1(s_ctrl,sensor_fusion_id_tmp);
-		if (rc < 0){
-			pr_err("%s:%d litao read sensor %s fusion id failed\n", __func__, __LINE__, s_ctrl->sensordata->sensor_name);
+		rc = msm_sensor_get_sensor_id_ginkgo_s5kgm1(s_ctrl, sensor_fusion_id_tmp);
+		if (rc < 0) {
+			pr_err("%s:%d litao read sensor %s fusion id failed\n",
+			        __func__, __LINE__, s_ctrl->sensordata->sensor_name);
 		}	
 	}
 
 	if ((!strcmp("ginkgo_ov13855_sunny_i", s_ctrl->sensordata->sensor_name)) ||
 	    (!strcmp("ginkgo_ov13855_ofilm_ii", s_ctrl->sensordata->sensor_name))) {
-		rc = msm_sensor_get_sensor_id_ginkgo_ov13855(s_ctrl,sensor_fusion_id_tmp);
-		if (rc < 0){
-			pr_err("%s:%d litao read sensor %s fusion id failed\n", __func__, __LINE__, s_ctrl->sensordata->sensor_name);
+		rc = msm_sensor_get_sensor_id_ginkgo_ov13855(s_ctrl, sensor_fusion_id_tmp);
+		if (rc < 0) {
+			pr_err("%s:%d litao read sensor %s fusion id failed\n",
+			        __func__, __LINE__, s_ctrl->sensordata->sensor_name);
 		}	
 	}
 
@@ -1012,10 +1006,10 @@ static ssize_t msm_sensor_id_show(struct device *dev,
 }
 static DEVICE_ATTR(sensorid, 0444, msm_sensor_id_show, NULL);
 
-int32_t msm_sensorid_init_device_name(void)
+static int32_t msm_sensorid_init_device_name(void)
 {
 	int32_t rc = 0;
-	CDBG("%s %d\n", __func__,__LINE__);
+
 	if (msm_sensorid_device != NULL) {
 		CDBG("Macle android_camera already created\n");
 		return 0;
