@@ -114,8 +114,8 @@ clone() {
 		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc64
-		git clone https://github.com/fiqri19102002/arm-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc32
+		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b elf-gcc-10-tarballs --depth=1 gcc64
+		git clone https://github.com/fiqri19102002/arm-gcc.git -b elf-gcc-10-tarballs --depth=1 gcc32
 	fi	
 }
 
