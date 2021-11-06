@@ -353,9 +353,8 @@ endif
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 ifeq ($(CONFIG_MACH_XIAOMI_GINKGO),y)
-	dtbo-$(CONFIG_ARCH_TRINKET) += \
-		trinket-idp-overlay.dtbo
-trinket-idp-overlay.dtbo-base := trinket.dtb
+	dtbo-y += ginkgo-trinket-overlay.dtbo
+ginkgo-trinket-overlay.dtbo-base := trinket.dtb
 else
 	dtbo-$(CONFIG_ARCH_TRINKET) += \
 		trinket-rumi-overlay.dtbo \
