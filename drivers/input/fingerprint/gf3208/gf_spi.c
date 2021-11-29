@@ -68,40 +68,11 @@ enum FP_MODE {
 	GF_DEBUG_MODE = 0x56
 };
 
-#define SUPPORT_NAV_EVENT
-
-#if defined(SUPPORT_NAV_EVENT)
-#define GF_NAV_INPUT_UP			KEY_UP
-#define GF_NAV_INPUT_DOWN		KEY_DOWN
-#define GF_NAV_INPUT_LEFT		KEY_LEFT
-#define GF_NAV_INPUT_RIGHT		KEY_RIGHT
-#define GF_NAV_INPUT_CLICK		KEY_VOLUMEDOWN
-#define GF_NAV_INPUT_DOUBLE_CLICK	KEY_VOLUMEUP
-#define GF_NAV_INPUT_LONG_PRESS		KEY_SEARCH
-#define GF_NAV_INPUT_HEAVY		KEY_CHAT
-#endif
-
 #define GF_KEY_INPUT_HOME		KEY_HOME
 #define GF_KEY_INPUT_MENU		KEY_MENU
 #define GF_KEY_INPUT_BACK		KEY_BACK
 #define GF_KEY_INPUT_POWER		KEY_POWER
 #define GF_KEY_INPUT_CAMERA		KEY_CAMERA
-
-#if defined(SUPPORT_NAV_EVENT)
-typedef enum gf_nav_event {
-	GF_NAV_NONE = 0,
-	GF_NAV_FINGER_UP,
-	GF_NAV_FINGER_DOWN,
-	GF_NAV_UP,
-	GF_NAV_DOWN,
-	GF_NAV_LEFT,
-	GF_NAV_RIGHT,
-	GF_NAV_CLICK,
-	GF_NAV_HEAVY,
-	GF_NAV_LONG_PRESS,
-	GF_NAV_DOUBLE_CLICK,
-} gf_nav_event_t;
-#endif
 
 typedef enum gf_key_event {
 	GF_KEY_NONE = 0,
@@ -145,13 +116,6 @@ struct gf_ioc_chip_info {
 #define GF_IOC_REMOVE           _IO(GF_IOC_MAGIC, 12)
 #define GF_IOC_CHIP_INFO        _IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
-
-#if defined(SUPPORT_NAV_EVENT)
-#define GF_IOC_NAV_EVENT	_IOW(GF_IOC_MAGIC, 14, gf_nav_event_t)
-#define  GF_IOC_MAXNR    15  /* THIS MACRO IS NOT USED NOW... */
-#else
-#define  GF_IOC_MAXNR    14  /* THIS MACRO IS NOT USED NOW... */
-#endif
 
 //#define AP_CONTROL_CLK       1
 #define  USE_PLATFORM_BUS     1
@@ -232,17 +196,6 @@ static struct gf_key_map maps[] = {
 	{ EV_KEY, GF_KEY_INPUT_MENU },
 	{ EV_KEY, GF_KEY_INPUT_BACK },
 	{ EV_KEY, GF_KEY_INPUT_POWER },
-#if defined(SUPPORT_NAV_EVENT)
-	{ EV_KEY, GF_NAV_INPUT_UP },
-	{ EV_KEY, GF_NAV_INPUT_DOWN },
-	{ EV_KEY, GF_NAV_INPUT_RIGHT },
-	{ EV_KEY, GF_NAV_INPUT_LEFT },
-	{ EV_KEY, GF_KEY_INPUT_CAMERA },
-	{ EV_KEY, GF_NAV_INPUT_CLICK },
-	{ EV_KEY, GF_NAV_INPUT_DOUBLE_CLICK },
-	{ EV_KEY, GF_NAV_INPUT_LONG_PRESS },
-	{ EV_KEY, GF_NAV_INPUT_HEAVY },
-#endif
 };
 #endif
 struct gf_key_map maps[] = {
@@ -595,73 +548,6 @@ static int gfspi_ioctl_clk_uninit(struct gf_dev *data)
 }
 #endif
 
-static void nav_event_input(struct gf_dev *gf_dev, gf_nav_event_t nav_event)
-{
-	uint32_t nav_input = 0;
-
-	switch (nav_event) {
-	case GF_NAV_FINGER_DOWN:
-		pr_debug("%s nav finger down\n", __func__);
-		break;
-
-	case GF_NAV_FINGER_UP:
-		pr_debug("%s nav finger up\n", __func__);
-		break;
-
-	case GF_NAV_DOWN:
-		nav_input = GF_NAV_INPUT_DOWN;
-		pr_debug("%s nav down\n", __func__);
-		break;
-
-	case GF_NAV_UP:
-		nav_input = GF_NAV_INPUT_UP;
-		pr_debug("%s nav up\n", __func__);
-		break;
-
-	case GF_NAV_LEFT:
-		nav_input = GF_NAV_INPUT_LEFT;
-		pr_debug("%s nav left\n", __func__);
-		break;
-
-	case GF_NAV_RIGHT:
-		nav_input = GF_NAV_INPUT_RIGHT;
-		pr_debug("%s nav right\n", __func__);
-		break;
-
-	case GF_NAV_CLICK:
-		nav_input = GF_NAV_INPUT_CLICK;
-		pr_debug("%s nav click\n", __func__);
-		break;
-
-	case GF_NAV_HEAVY:
-		nav_input = GF_NAV_INPUT_HEAVY;
-		pr_debug("%s nav heavy\n", __func__);
-		break;
-
-	case GF_NAV_LONG_PRESS:
-		nav_input = GF_NAV_INPUT_LONG_PRESS;
-		pr_debug("%s nav long press\n", __func__);
-		break;
-
-	case GF_NAV_DOUBLE_CLICK:
-		nav_input = GF_NAV_INPUT_DOUBLE_CLICK;
-		pr_debug("%s nav double click\n", __func__);
-		break;
-
-	default:
-		pr_warn("%s unknown nav event: %d\n", __func__, nav_event);
-		break;
-	}
-
-	if ((nav_event != GF_NAV_FINGER_DOWN) &&
-			(nav_event != GF_NAV_FINGER_UP)) {
-		input_report_key(gf_dev->input, nav_input, 1);
-		input_sync(gf_dev->input);
-		input_report_key(gf_dev->input, nav_input, 0);
-		input_sync(gf_dev->input);
-	}
-}
-
 static irqreturn_t gf_irq(int irq, void *handle)
 {
 #if defined(GF_NETLINK_ENABLE)
@@ -747,9 +633,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct gf_dev *gf_dev = &gf;
 	struct gf_key gf_key;
-#if defined(SUPPORT_NAV_EVENT)
-	gf_nav_event_t nav_event = GF_NAV_NONE;
-#endif
 	int retval = 0;
 	u8 netlink_route = NETLINK_TEST;
 	struct gf_ioc_chip_info info;
@@ -792,19 +675,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
-
-#if defined(SUPPORT_NAV_EVENT)
-	case GF_IOC_NAV_EVENT:
-		pr_debug("%s GF_IOC_NAV_EVENT\n", __func__);
-		if (copy_from_user(&nav_event, (void __user *)arg, sizeof(gf_nav_event_t))) {
-			pr_err("failed to copy nav event from user to kernel\n");
-			retval = -EFAULT;
-			break;
-		}
-
-		nav_event_input(gf_dev, nav_event);
-		break;
-#endif
 
 	case GF_IOC_ENABLE_SPI_CLK:
 		pr_debug("%s GF_IOC_ENABLE_SPI_CLK\n", __func__);
