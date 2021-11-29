@@ -102,14 +102,10 @@ struct gf_ioc_chip_info {
 
 #define GF_IOC_MAGIC    'g'     //define magic number
 #define GF_IOC_INIT             _IOR(GF_IOC_MAGIC, 0, uint8_t)
-#define GF_IOC_EXIT             _IO(GF_IOC_MAGIC, 1)
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ      _IO(GF_IOC_MAGIC, 4)
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
-#define GF_IOC_ENTER_SLEEP_MODE _IO(GF_IOC_MAGIC, 10)
-#define GF_IOC_GET_FW_INFO      _IOR(GF_IOC_MAGIC, 11, uint8_t)
-#define GF_IOC_REMOVE           _IO(GF_IOC_MAGIC, 12)
 #define GF_IOC_CHIP_INFO        _IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
@@ -476,10 +472,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 		break;
 
-	case GF_IOC_EXIT:
-		pr_debug("%s GF_IOC_EXIT\n", __func__);
-		break;
-
 	case GF_IOC_DISABLE_IRQ:
 		pr_debug("%s GF_IOC_DISABEL_IRQ\n", __func__);
 		gf_disable_irq(gf_dev);
@@ -503,20 +495,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 
 		gf_kernel_key_input(gf_dev, &gf_key);
-		break;
-
-	case GF_IOC_ENTER_SLEEP_MODE:
-		pr_debug("%s GF_IOC_ENTER_SLEEP_MODE\n", __func__);
-		break;
-
-	case GF_IOC_GET_FW_INFO:
-		pr_debug("%s GF_IOC_GET_FW_INFO\n", __func__);
-		break;
-
-	case GF_IOC_REMOVE:
-		pr_debug("%s GF_IOC_REMOVE\n", __func__);
-		//irq_cleanup(gf_dev);
-		//gf_cleanup(gf_dev);
 		break;
 
 	case GF_IOC_CHIP_INFO:
