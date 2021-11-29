@@ -106,8 +106,6 @@ struct gf_ioc_chip_info {
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ      _IO(GF_IOC_MAGIC, 4)
-#define GF_IOC_ENABLE_POWER     _IO(GF_IOC_MAGIC, 7)
-#define GF_IOC_DISABLE_POWER    _IO(GF_IOC_MAGIC, 8)
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
 #define GF_IOC_ENTER_SLEEP_MODE _IO(GF_IOC_MAGIC, 10)
 #define GF_IOC_GET_FW_INFO      _IOR(GF_IOC_MAGIC, 11, uint8_t)
@@ -338,24 +336,6 @@ static void gf_cleanup(struct gf_dev *gf_dev)
 	}
 }
 
-static int gf_power_on(struct gf_dev *gf_dev)
-{
-	int rc = 0;
-
-	/* TODO: add your power control here */
-
-	return rc;
-}
-
-static int gf_power_off(struct gf_dev *gf_dev)
-{
-	int rc = 0;
-
-	/* TODO: add your power control here */
-
-	return rc;
-}
-
 static int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 {
 	if (gf_dev == NULL) {
@@ -525,16 +505,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
 
-	case GF_IOC_ENABLE_POWER:
-		pr_debug("%s GF_IOC_ENABLE_POWER\n", __func__);
-		gf_power_on(gf_dev);
-		break;
-
-	case GF_IOC_DISABLE_POWER:
-		pr_debug("%s GF_IOC_DISABLE_POWER\n", __func__);
-		gf_power_off(gf_dev);
-		break;
-
 	case GF_IOC_ENTER_SLEEP_MODE:
 		pr_debug("%s GF_IOC_ENTER_SLEEP_MODE\n", __func__);
 		break;
@@ -665,7 +635,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 		gf_cleanup(gf_dev);
 		/*power off the sensor*/
 		gf_dev->device_available = 0;
-		gf_power_off(gf_dev);
 	}
 	mutex_unlock(&device_list_lock);
 	return status;
