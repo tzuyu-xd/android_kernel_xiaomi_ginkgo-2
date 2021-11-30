@@ -24,7 +24,6 @@
 #include <linux/err.h>
 #include <linux/list.h>
 #include <linux/errno.h>
-#include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/compat.h>
 #include <linux/delay.h>
@@ -142,7 +141,6 @@ static int SPIDEV_MAJOR;
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 static LIST_HEAD(device_list);
-static DEFINE_MUTEX(device_list_lock);
 //static struct wake_lock fp_wakelock;
 static struct wakeup_source fp_ws;//for kernel 4.9
 static struct gf_dev gf;
@@ -456,8 +454,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 	struct gf_dev *gf_dev = &gf;
 	int status = -ENXIO;
 
-	mutex_lock(&device_list_lock);
-
 	list_for_each_entry(gf_dev, &device_list, device_entry) {
 		if (gf_dev->devt == inode->i_rdev) {
 			pr_info("Found\n");
@@ -475,7 +471,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 		if (gf_dev->users == 1) {
 			status = gf_parse_dts(gf_dev);
 			if (status)
-				mutex_unlock(&device_list_lock);
 				return status;
 
 			status = irq_setup(gf_dev);
@@ -490,7 +485,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 	} else {
 		pr_info("No device for minor %d\n", iminor(inode));
 	}
-	mutex_unlock(&device_list_lock);
 
 	return status;
 }
@@ -500,7 +494,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 	struct gf_dev *gf_dev = &gf;
 	int status = 0;
 
-	mutex_lock(&device_list_lock);
 	gf_dev = filp->private_data;
 	filp->private_data = NULL;
 
@@ -515,7 +508,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 		/*power off the sensor*/
 		gf_dev->device_available = 0;
 	}
-	mutex_unlock(&device_list_lock);
 	return status;
 }
 
@@ -592,7 +584,6 @@ static int gf_probe(struct platform_device *pdev)
 	/* If we can allocate a minor number, hook up this device.
 	 * Reusing minors is fine so long as udev or mdev is working.
 	 */
-	mutex_lock(&device_list_lock);
 	minor = find_first_zero_bit(minors, N_SPI_MINORS);
 	if (minor < N_SPI_MINORS) {
 		struct device *dev;
@@ -604,7 +595,6 @@ static int gf_probe(struct platform_device *pdev)
 	} else {
 		dev_dbg(&gf_dev->spi->dev, "no minor number available!\n");
 		status = -ENODEV;
-		mutex_unlock(&device_list_lock);
 		gf_dev->device_available = 0;
 		return status;
 	}
@@ -617,20 +607,16 @@ static int gf_probe(struct platform_device *pdev)
 		gf_dev->device_available = 0;
 		return status;
 	}
-	mutex_unlock(&device_list_lock);
-
   
 	gf_dev->input = input_allocate_device();
 	if (gf_dev->input == NULL) {
 		pr_err("%s, failed to allocate input device\n", __func__);
 		status = -ENOMEM;
 		if (gf_dev->devt != 0) {
-			mutex_lock(&device_list_lock);
 			pr_info("Err: status = %d\n", status);
 			list_del(&gf_dev->device_entry);
 			device_destroy(gf_class, gf_dev->devt);
 			clear_bit(MINOR(gf_dev->devt), minors);
-			mutex_unlock(&device_list_lock);
 		}
 	}
 	for (i = 0; i < ARRAY_SIZE(maps); i++)
@@ -667,11 +653,9 @@ static int gf_remove(struct platform_device *pdev)
 	input_free_device(gf_dev->input);
 
 	/* prevent new opens */
-	mutex_lock(&device_list_lock);
 	list_del(&gf_dev->device_entry);
 	device_destroy(gf_class, gf_dev->devt);
 	clear_bit(MINOR(gf_dev->devt), minors);
-	mutex_unlock(&device_list_lock);
 
 	return 0;
 }
