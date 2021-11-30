@@ -119,11 +119,6 @@ struct gf_dev {
 	struct work_struct work;
 };
 
-#define VER_MAJOR   1
-#define VER_MINOR   2
-#define PATCH_LEVEL 10
-
-
 #define WAKELOCK_HOLD_TIME 2000 /* in ms */
 #define FP_UNLOCK_REJECTION_TIMEOUT (WAKELOCK_HOLD_TIME - 500)
 #define GF_SPIDEV_NAME     "goodix,fingerprint"
@@ -635,8 +630,6 @@ static int gf_probe(struct platform_device *pdev)
 
 	//wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
 	wakeup_source_init(&fp_ws, "fp_ws");//for kernel 4.9
-
-	pr_info("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
 
 	return status;
 }
