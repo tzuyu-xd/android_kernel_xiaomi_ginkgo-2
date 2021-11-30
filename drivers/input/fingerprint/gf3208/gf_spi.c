@@ -93,20 +93,12 @@ struct gf_key_map {
 	unsigned int code;
 };
 
-struct gf_ioc_chip_info {
-	unsigned char vendor_id;
-	unsigned char mode;
-	unsigned char operation;
-	unsigned char reserved[5];
-};
-
 #define GF_IOC_MAGIC    'g'     //define magic number
 #define GF_IOC_INIT             _IOR(GF_IOC_MAGIC, 0, uint8_t)
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ      _IO(GF_IOC_MAGIC, 4)
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
-#define GF_IOC_CHIP_INFO        _IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
 #define  USE_PLATFORM_BUS     1
@@ -460,7 +452,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct gf_key gf_key;
 	int retval = 0;
 	u8 netlink_route = NETLINK_TEST;
-	struct gf_ioc_chip_info info;
 
 	switch (cmd) {
 	case GF_IOC_INIT:
@@ -495,17 +486,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 
 		gf_kernel_key_input(gf_dev, &gf_key);
-		break;
-
-	case GF_IOC_CHIP_INFO:
-		pr_debug("%s GF_IOC_CHIP_INFO\n", __func__);
-		if (copy_from_user(&info, (void __user *)arg, sizeof(struct gf_ioc_chip_info))) {
-			retval = -EFAULT;
-			break;
-		}
-		pr_info("vendor_id : 0x%x\n", info.vendor_id);
-		pr_info("mode : 0x%x\n", info.mode);
-		pr_info("operation: 0x%x\n", info.operation);
 		break;
 
         case GF_IOC_HAL_INITED_READY:
