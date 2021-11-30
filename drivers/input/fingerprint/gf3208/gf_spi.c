@@ -150,7 +150,6 @@ static int pid = -1;
 static struct sock *nl_sk = NULL;
 
 extern int fpsensor;
-static struct proc_dir_entry *proc_entry;
 
 #if 0
 static struct gf_key_map maps[] = {
@@ -536,19 +535,6 @@ err_parse_dt:
 	return status;
 }
 
-static int proc_show_ver(struct seq_file *file,void *v)
-{
-	seq_printf(file,"Fingerprint: Goodix\n");
-	return 0;
-}
-
-static int proc_open(struct inode *inode,struct file *file)
-{
-	printk("gf3258 proc_open\n");
-	single_open(file,proc_show_ver,NULL);
-	return 0;
-}
-
 static int gf_release(struct inode *inode, struct file *filp)
 {
 	struct gf_dev *gf_dev = &gf;
@@ -582,13 +568,6 @@ static const struct file_operations gf_fops = {
 	.unlocked_ioctl = gf_ioctl,
 	.open = gf_open,
 	.release = gf_release,
-};
-
-static const struct file_operations proc_file_ops = {
-	.owner = THIS_MODULE,
-	.open = proc_open,
-	.read = seq_read,
-	.release = single_release,
 };
 
 static int gf_state_chg_cb(struct notifier_block *nb, unsigned long val, void *data)
@@ -702,14 +681,6 @@ static int gf_probe(struct platform_device *pdev)
 	//wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
 	wakeup_source_init(&fp_ws, "fp_ws");//for kernel 4.9
 
-	proc_entry = proc_create(PROC_NAME, 0644, NULL, &proc_file_ops);
-	if (NULL == proc_entry) {
-		printk("gf3258 Couldn't create proc entry!");
-		return -ENOMEM;
-	} else {
-		printk("gf3258 Create proc entry success!");
-	}
-
 	pr_info("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
 
 	return status;
@@ -748,7 +719,6 @@ static int gf_remove(struct platform_device *pdev)
 	list_del(&gf_dev->device_entry);
 	device_destroy(gf_class, gf_dev->devt);
 	clear_bit(MINOR(gf_dev->devt), minors);
-	remove_proc_entry(PROC_NAME,NULL);
 	mutex_unlock(&device_list_lock);
 
 	return 0;
