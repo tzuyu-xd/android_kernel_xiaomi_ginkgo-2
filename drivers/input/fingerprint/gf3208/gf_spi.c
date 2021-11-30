@@ -13,67 +13,37 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/ioctl.h>
-#include <linux/fs.h>
-#include <linux/device.h>
-#include <linux/input.h>
-#include <linux/clk.h>
-#include <linux/err.h>
-#include <linux/list.h>
-#include <linux/errno.h>
-#include <linux/slab.h>
-#include <linux/compat.h>
+
 #include <linux/delay.h>
-#include <linux/uaccess.h>
-#include <linux/ktime.h>
+#include <linux/device.h>
+#include <linux/err.h>
+#include <linux/errno.h>
+#include <linux/fs.h>
+#include <linux/gpio.h>
+#include <linux/init.h>
+#include <linux/input.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <linux/gpio.h>
-#include <linux/regulator/consumer.h>
-#include <linux/of_gpio.h>
-#include <linux/timer.h>
-#include <linux/notifier.h>
-#include <linux/fb.h>
-#include <linux/pm_qos.h>
-#include <linux/cpufreq.h>
-#include <linux/mdss_io_util.h>
-//#include <linux/wakelock.h>
-#include <linux/proc_fs.h>
-#include <linux/unistd.h>
-#include <linux/delay.h>
-#include <drm/drm_bridge.h>
+#include <linux/ioctl.h>
+#include <linux/list.h>
+#include <linux/module.h>
 #include <linux/msm_drm_notify.h>
-#include <linux/time.h>
-#include <linux/types.h>
-#include <linux/workqueue.h>
+#include <linux/notifier.h>
+#include <linux/of_gpio.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
+#include <linux/workqueue.h>
+#include <linux/regulator/consumer.h>
+
 #include <drm/drm_bridge.h>
-#include <net/sock.h>
 #include <net/netlink.h>
-
-enum FP_MODE {
-	GF_IMAGE_MODE = 0,
-	GF_KEY_MODE,
-	GF_SLEEP_MODE,
-	GF_FF_MODE,
-	GF_DEBUG_MODE = 0x56
-};
-
-#define GF_KEY_INPUT_HOME		KEY_HOME
-#define GF_KEY_INPUT_MENU		KEY_MENU
-#define GF_KEY_INPUT_BACK		KEY_BACK
-#define GF_KEY_INPUT_POWER		KEY_POWER
-#define GF_KEY_INPUT_CAMERA		KEY_CAMERA
+#include <net/sock.h>
 
 typedef enum gf_key_event {
 	GF_KEY_NONE = 0,
 	GF_KEY_HOME,
 	GF_KEY_POWER,
-	GF_KEY_MENU,
-	GF_KEY_BACK,
 	GF_KEY_CAMERA,
 } gf_key_event_t;
 
@@ -87,7 +57,7 @@ struct gf_key_map {
 	unsigned int code;
 };
 
-#define GF_IOC_MAGIC    'g'     //define magic number
+#define GF_IOC_MAGIC             'g' /* define magic number */
 #define GF_IOC_INIT             _IOR(GF_IOC_MAGIC, 0, uint8_t)
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
@@ -95,20 +65,14 @@ struct gf_key_map {
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
-#define GF_NET_EVENT_IRQ 1
-#define NETLINK_TEST 25
-#define MAX_MSGSIZE 		32
-
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
 	struct platform_device *spi;
 	struct input_dev *input;
-	/* buffer is NULL unless this device is open (users > 0) */
 	unsigned users;
 	signed irq_gpio;
 	signed reset_gpio;
-	signed pwr_gpio;
 	int irq;
 	int irq_enabled;
 	int clk_enabled;
@@ -119,54 +83,36 @@ struct gf_dev {
 	struct work_struct work;
 };
 
-#define WAKELOCK_HOLD_TIME 2000 /* in ms */
-#define FP_UNLOCK_REJECTION_TIMEOUT (WAKELOCK_HOLD_TIME - 500)
-#define GF_SPIDEV_NAME     "goodix,fingerprint"
-/*device name after register in charater*/
-#define GF_DEV_NAME            "goodix_fp"
-#define	GF_INPUT_NAME	    "uinput-goodix"/*"goodix_fp" */
+#define WAKELOCK_HOLD_TIME 		2000 /* in ms */
+#define FP_UNLOCK_REJECTION_TIMEOUT 	(WAKELOCK_HOLD_TIME - 500)
 
-#define	CHRD_DRIVER_NAME	"goodix_fp_spi"
-#define	CLASS_NAME		    "goodix_fp"
+#define GF_SPIDEV_NAME 		"goodix,fingerprint"
+#define GF_DEV_NAME 		"goodix_fp"
+#define GF_INPUT_NAME 		"uinput-goodix" /* "goodix_fp" */
+#define CHRD_DRIVER_NAME 	"goodix_fp_spi"
+#define CLASS_NAME 		"goodix_fp"
 
-#define PROC_NAME  "hwinfo"
+#define GF_NET_EVENT_IRQ 	1
+#define NETLINK_TEST 		25
+#define MAX_MSGSIZE 		32
+#define N_SPI_MINORS 		32	/* ... up to 256 */
 
-#define N_SPI_MINORS		32	/* ... up to 256 */
 static int SPIDEV_MAJOR;
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 static LIST_HEAD(device_list);
-//static struct wake_lock fp_wakelock;
-static struct wakeup_source fp_ws;//for kernel 4.9
+static struct wakeup_source fp_ws;
 static struct gf_dev gf;
 static int pid = -1;
 static struct sock *nl_sk = NULL;
 
 extern int fpsensor;
 
-#if 0
-static struct gf_key_map maps[] = {
-	{ EV_KEY, GF_KEY_INPUT_HOME },
-	{ EV_KEY, GF_KEY_INPUT_MENU },
-	{ EV_KEY, GF_KEY_INPUT_BACK },
-	{ EV_KEY, GF_KEY_INPUT_POWER },
-};
-#endif
 struct gf_key_map maps[] = {
         { EV_KEY, KEY_HOME },
-        { EV_KEY, KEY_MENU },
-        { EV_KEY, KEY_BACK },
         { EV_KEY, KEY_POWER },
-        { EV_KEY, KEY_UP },
-        { EV_KEY, KEY_DOWN },
-        { EV_KEY, KEY_RIGHT },
-        { EV_KEY, KEY_LEFT },
         { EV_KEY, KEY_CAMERA },
-        { EV_KEY, KEY_F9 },
-        { EV_KEY, KEY_F19 },
-        { EV_KEY, KEY_ENTER},
         { EV_KEY, KEY_KPENTER },
-
 };
 
 static void sendnlmsg(char *message)
@@ -177,9 +123,8 @@ static void sendnlmsg(char *message)
 	int slen = 0;
 	int ret = 0;
 
-	if (!message || !nl_sk || !pid) {
-		return ;
-	}
+	if (!message || !nl_sk || !pid)
+		return;
 
 	skb_1 = alloc_skb(len, GFP_KERNEL);
 	if (!skb_1) {
@@ -197,9 +142,8 @@ static void sendnlmsg(char *message)
 	memcpy(NLMSG_DATA(nlh), message, slen + 1);
 
 	ret = netlink_unicast(nl_sk, skb_1, pid, MSG_DONTWAIT);
-	if (!ret) {
+	if (!ret)
 		pr_err("send msg from kernel to usespace failed ret 0x%x \n", ret);
-	}
 }
 
 static void nl_data_ready(struct sk_buff *__skb)
@@ -264,7 +208,6 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 		pr_err("failed to request reset gpio, rc = %d\n", rc);
 		return rc;
 	}
-	printk("tyt reset_gpio=%d\n",gf_dev->reset_gpio);
 	gpio_direction_output(gf_dev->reset_gpio, 0);
 
 	gf_dev->irq_gpio = of_get_named_gpio(np, "fp-gpio-irq", 0);
@@ -278,7 +221,6 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 		pr_err("failed to request irq gpio, rc = %d\n", rc);
 		devm_gpio_free(dev, gf_dev->reset_gpio);
 	}
-	printk("tyt irq_gpio=%d\n",gf_dev->irq_gpio);
 	gpio_direction_input(gf_dev->irq_gpio);
 
 	return rc;
@@ -286,28 +228,20 @@ static int gf_parse_dts(struct gf_dev *gf_dev)
 
 static void gf_cleanup(struct gf_dev *gf_dev)
 {
-	pr_info("[info] %s\n", __func__);
-
-	if (gpio_is_valid(gf_dev->irq_gpio)) {
+	if (gpio_is_valid(gf_dev->irq_gpio))
 		gpio_free(gf_dev->irq_gpio);
-		pr_info("remove irq_gpio success\n");
-	}
 
-	if (gpio_is_valid(gf_dev->reset_gpio)) {
+	if (gpio_is_valid(gf_dev->reset_gpio))
 		gpio_free(gf_dev->reset_gpio);
-		pr_info("remove reset_gpio success\n");
-	}
 }
 
 static irqreturn_t gf_irq(int irq, void *handle)
 {
 	char msg = GF_NET_EVENT_IRQ;
 	struct gf_dev *gf_dev = &gf;
-	//wake_lock_timeout(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
-	__pm_wakeup_event(&fp_ws, WAKELOCK_HOLD_TIME);//for kernel 4.9
+	__pm_wakeup_event(&fp_ws, WAKELOCK_HOLD_TIME);
 	sendnlmsg(&msg);
 	if (gf_dev->device_available == 1) {
-		printk("%s:shedule_work\n",__func__);
 		gf_dev->wait_finger_down = false;
 		schedule_work(&gf_dev->work);
 	}
@@ -323,7 +257,6 @@ static int irq_setup(struct gf_dev *gf_dev)
 	status = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
 			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 			"gf", gf_dev);
-
 	if (status) {
 		pr_err("failed to request IRQ:%d\n", gf_dev->irq);
 		return status;
@@ -346,18 +279,18 @@ static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
 {
 	uint32_t key_input = 0;
 
-	if (gf_key->key == GF_KEY_HOME) {
+	if (gf_key->key == GF_KEY_HOME)
 		key_input = KEY_KPENTER;
-	} else if (gf_key->key == GF_KEY_POWER) {
+	else if (gf_key->key == GF_KEY_POWER)
 		key_input = KEY_KPENTER;
-	} else if (gf_key->key == GF_KEY_CAMERA) {
-		key_input = GF_KEY_INPUT_CAMERA;
-	} else {
+	else if (gf_key->key == GF_KEY_CAMERA)
+		key_input = KEY_CAMERA;
+	else
 		/* add special key define */
 		key_input = gf_key->key;
-	}
-	pr_info("%s: received key event[%d], key=%d, value=%d\n",
-			__func__, key_input, gf_key->key, gf_key->value);
+
+	pr_debug("%s: received key event[%d], key=%d, value=%d\n",
+	         __func__, key_input, gf_key->key, gf_key->value);
 
 	if ((GF_KEY_POWER == gf_key->key || GF_KEY_CAMERA == gf_key->key)
 			&& (gf_key->value == 1)) {
@@ -382,39 +315,31 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case GF_IOC_INIT:
-		pr_debug("%s GF_IOC_INIT\n", __func__);
 		if (copy_to_user((void __user *)arg, (void *)&netlink_route, sizeof(u8))) {
 			pr_err("GF_IOC_INIT failed\n");
 			retval = -EFAULT;
 			break;
 		}
 		break;
-
 	case GF_IOC_DISABLE_IRQ:
-		pr_debug("%s GF_IOC_DISABEL_IRQ\n", __func__);
 		if (gf_dev->irq_enabled) {
 			disable_irq(gf_dev->irq);
 			gf_dev->irq_enabled = 0;
 		}
 		break;
-
 	case GF_IOC_ENABLE_IRQ:
-		pr_debug("%s GF_IOC_ENABLE_IRQ\n", __func__);
 		if (!gf_dev->irq_enabled) {
 			enable_irq(gf_dev->irq);
 			gf_dev->irq_enabled = 1;
 		}
 		break;
-
 	case GF_IOC_RESET:
-		pr_debug("%s GF_IOC_RESET\n", __func__);
 		gpio_direction_output(gf_dev->reset_gpio, 1);
 		gpio_set_value(gf_dev->reset_gpio, 0);
 		mdelay(3);
 		gpio_set_value(gf_dev->reset_gpio, 1);
 		mdelay(3);
 		break;
-
 	case GF_IOC_INPUT_KEY_EVENT:
 		if (copy_from_user(&gf_key, (void __user *)arg, sizeof(struct gf_key))) {
 			pr_err("failed to copy input key event from user to kernel\n");
@@ -424,14 +349,10 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
-
         case GF_IOC_HAL_INITED_READY:
-		pr_debug("%s GF_IOC_HAL_INITED_READY\n", __func__);
 		gf_dev->device_available = 1;
 		break;
-
 	default:
-		pr_warn("unsupport cmd:0x%x\n", cmd);
 		break;
 	}
 
@@ -440,7 +361,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 static void notification_work(struct work_struct *work)
 {
-	pr_debug("%s unblank\n", __func__);
 	dsi_bridge_interface_enable(FP_UNLOCK_REJECTION_TIMEOUT);
 }
 
@@ -451,7 +371,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 	list_for_each_entry(gf_dev, &device_list, device_entry) {
 		if (gf_dev->devt == inode->i_rdev) {
-			pr_info("Found\n");
 			status = 0;
 			break;
 		}
@@ -461,8 +380,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 		gf_dev->users++;
 		filp->private_data = gf_dev;
 		nonseekable_open(inode, filp);
-		pr_info("Succeed to open device. irq = %d\n",
-				gf_dev->irq);
 		if (gf_dev->users == 1) {
 			status = gf_parse_dts(gf_dev);
 			if (status)
@@ -472,7 +389,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 			if (status)
 				gf_cleanup(gf_dev);
 		}
-		//gf_hw_reset(gf_dev, 3);//reserve for timing sequence
+
 		if (gf_dev->irq_enabled) {
 			disable_irq(gf_dev->irq);
 			gf_dev->irq_enabled = 0;
@@ -492,26 +409,18 @@ static int gf_release(struct inode *inode, struct file *filp)
 	gf_dev = filp->private_data;
 	filp->private_data = NULL;
 
-	/*last close?? */
 	gf_dev->users--;
 	if (!gf_dev->users) {
-
-		pr_info("disble_irq. irq = %d\n", gf_dev->irq);
-		//gf_disable_irq(gf_dev);
 		irq_cleanup(gf_dev);
 		gf_cleanup(gf_dev);
-		/*power off the sensor*/
 		gf_dev->device_available = 0;
 	}
+
 	return status;
 }
 
 static const struct file_operations gf_fops = {
 	.owner = THIS_MODULE,
-	/* REVISIT switch to aio primitives, so that userspace
-	 * gets more complete API coverage.  It'll simplify things
-	 * too, except for the locking.
-	 */
 	.unlocked_ioctl = gf_ioctl,
 	.open = gf_open,
 	.release = gf_release,
@@ -564,21 +473,17 @@ static int gf_probe(struct platform_device *pdev)
 	int status = -EINVAL;
 	unsigned long minor;
 	int i;
-	printk("Macle11 gf_probe\n");
+
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
 	gf_dev->spi = pdev;
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
-	gf_dev->pwr_gpio = -EINVAL;
 	gf_dev->device_available = 0;
 	gf_dev->drm_black = 0;
 	gf_dev->wait_finger_down = false;
 	INIT_WORK(&gf_dev->work, notification_work);
 
-	/* If we can allocate a minor number, hook up this device.
-	 * Reusing minors is fine so long as udev or mdev is working.
-	 */
 	minor = find_first_zero_bit(minors, N_SPI_MINORS);
 	if (minor < N_SPI_MINORS) {
 		struct device *dev;
@@ -614,6 +519,7 @@ static int gf_probe(struct platform_device *pdev)
 			clear_bit(MINOR(gf_dev->devt), minors);
 		}
 	}
+
 	for (i = 0; i < ARRAY_SIZE(maps); i++)
 		input_set_capability(gf_dev->input, maps[i].type, maps[i].code);
 
@@ -627,9 +533,7 @@ static int gf_probe(struct platform_device *pdev)
 
 	gf_dev->notifier = goodix_noti_block;
 	msm_drm_register_client(&gf_dev->notifier);
-
-	//wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
-	wakeup_source_init(&fp_ws, "fp_ws");//for kernel 4.9
+	wakeup_source_init(&fp_ws, "fp_ws");
 
 	return status;
 }
@@ -638,11 +542,12 @@ static int gf_remove(struct platform_device *pdev)
 {
 	struct gf_dev *gf_dev = &gf;
 
-	//wake_lock_destroy(&fp_wakelock);
-	wakeup_source_trash(&fp_ws);//for kernel 4.9
+	wakeup_source_trash(&fp_ws);
 	msm_drm_unregister_client(&gf_dev->notifier);
+
 	if (gf_dev->input)
 		input_unregister_device(gf_dev->input);
+
 	input_free_device(gf_dev->input);
 
 	/* prevent new opens */
@@ -655,7 +560,7 @@ static int gf_remove(struct platform_device *pdev)
 
 static const struct of_device_id gx_match_table[] = {
 	{ .compatible = GF_SPIDEV_NAME },
-	{},
+	{ },
 };
 
 static struct platform_driver gf_driver = {
@@ -673,14 +578,10 @@ static int __init gf_init(void)
 {
 	int status;
 
-	/* Claim our 256 reserved device numbers.  Then register a class
-	 * that will key udev/mdev to add/remove /dev nodes.  Last, register
-	 * the driver which manages those device numbers.
-	 */
-	if(fpsensor != 2) {
-    	pr_err(" hml gf_init failed as fpsensor = %d(2=gdx)\n", fpsensor);
-        return -1;
-    }
+	if (fpsensor != 2) {
+		pr_err(" hml gf_init failed as fpsensor = %d(2=gdx)\n", fpsensor);
+		return -1;
+	}
 
 	BUILD_BUG_ON(N_SPI_MINORS > 256);
 	status = register_chrdev(SPIDEV_MAJOR, CHRD_DRIVER_NAME, &gf_fops);
@@ -688,6 +589,7 @@ static int __init gf_init(void)
 		pr_warn("Failed to register char device!\n");
 		return status;
 	}
+
 	SPIDEV_MAJOR = status;
 	gf_class = class_create(THIS_MODULE, CLASS_NAME);
 	if (IS_ERR(gf_class)) {
@@ -695,6 +597,7 @@ static int __init gf_init(void)
 		pr_warn("Failed to create class.\n");
 		return PTR_ERR(gf_class);
 	}
+
 	status = platform_driver_register(&gf_driver);
 	if (status < 0) {
 		class_destroy(gf_class);
@@ -703,7 +606,6 @@ static int __init gf_init(void)
 	}
 
 	netlink_init();
-	pr_info("status = 0x%x\n", status);
 	return 0;
 }
 module_init(gf_init);
