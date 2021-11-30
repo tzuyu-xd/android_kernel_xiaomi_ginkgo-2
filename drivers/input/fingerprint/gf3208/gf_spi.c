@@ -96,7 +96,6 @@ struct gf_key_map {
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
-#define GF_NETLINK_ENABLE 1
 #define GF_NET_EVENT_IRQ 1
 #define GF_NET_EVENT_FB_BLACK 2
 #define GF_NET_EVENT_FB_UNBLACK 3
@@ -361,7 +360,6 @@ static void gf_disable_irq(struct gf_dev *gf_dev)
 
 static irqreturn_t gf_irq(int irq, void *handle)
 {
-#if defined(GF_NETLINK_ENABLE)
 	char msg = GF_NET_EVENT_IRQ;
 	struct gf_dev *gf_dev = &gf;
 	//wake_lock_timeout(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
@@ -372,7 +370,6 @@ static irqreturn_t gf_irq(int irq, void *handle)
 		gf_dev->wait_finger_down = false;
 		schedule_work(&gf_dev->work);
 	}
-#endif
 
 	return IRQ_HANDLED;
 }
@@ -615,10 +612,8 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 		blank = evdata->data;
 		if (gf_dev->device_available == 1 && *blank == MSM_DRM_BLANK_UNBLANK) {
 				gf_dev->fb_black = 0;
-#if defined(GF_NETLINK_ENABLE)
 				msg = GF_NET_EVENT_FB_UNBLACK;
 				sendnlmsg(&msg);
-#endif
 			}
 
 	}else if(evdata && evdata->data && val == MSM_DRM_EARLY_EVENT_BLANK && gf_dev){
@@ -626,10 +621,8 @@ static int goodix_fb_state_chg_callback(struct notifier_block *nb,
 			if (gf_dev->device_available == 1 && *blank == MSM_DRM_BLANK_POWERDOWN) {
 				gf_dev->fb_black = 1;
 				gf_dev->wait_finger_down = true;
-#if defined(GF_NETLINK_ENABLE)
 				msg = GF_NET_EVENT_FB_BLACK;
 				sendnlmsg(&msg);
-#endif
 			}
 
 	}
@@ -812,9 +805,7 @@ static int __init gf_init(void)
 		pr_warn("Failed to register SPI driver.\n");
 	}
 
-#ifdef GF_NETLINK_ENABLE
 	netlink_init();
-#endif
 	pr_info("status = 0x%x\n", status);
 	return 0;
 }
@@ -822,9 +813,7 @@ module_init(gf_init);
 
 static void __exit gf_exit(void)
 {
-#ifdef GF_NETLINK_ENABLE
 	netlink_exit();
-#endif
 	platform_driver_unregister(&gf_driver);
 	class_destroy(gf_class);
 	unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
