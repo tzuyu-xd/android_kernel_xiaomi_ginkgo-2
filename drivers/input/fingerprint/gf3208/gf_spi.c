@@ -97,8 +97,6 @@ struct gf_key_map {
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
 #define GF_NET_EVENT_IRQ 1
-#define GF_NET_EVENT_FB_BLACK 2
-#define GF_NET_EVENT_FB_UNBLACK 3
 #define NETLINK_TEST 25
 #define MAX_MSGSIZE 		32
 
@@ -117,7 +115,7 @@ struct gf_dev {
 	int clk_enabled;
 	struct notifier_block notifier;
 	char device_available;
-	char fb_black;
+	char drm_black;
 	char wait_finger_down;
 	struct work_struct work;
 };
@@ -595,42 +593,44 @@ static const struct file_operations proc_file_ops = {
 	.release = single_release,
 };
 
-static int goodix_fb_state_chg_callback(struct notifier_block *nb,
-		unsigned long val, void *data)
+static int gf_state_chg_cb(struct notifier_block *nb, unsigned long val, void *data)
 {
-	struct gf_dev *gf_dev;
-	struct fb_event *evdata = data;
-	int *blank;
+	struct gf_dev *gf_dev = container_of(nb, struct gf_dev, notifier);
+	struct msm_drm_notifier *evdata = data;
+	unsigned int blank;
 	char msg = 0;
 
 	if (val != MSM_DRM_EVENT_BLANK && val != MSM_DRM_EARLY_EVENT_BLANK)
 		return 0;
-	pr_info("[info] %s go to the goodix_fb_state_chg_callback value = %d\n",
-			__func__, (int)val);
-	gf_dev = container_of(nb, struct gf_dev, notifier);
+
 	if (evdata && evdata->data && val == MSM_DRM_EVENT_BLANK && gf_dev) {
-		blank = evdata->data;
-		if (gf_dev->device_available == 1 && *blank == MSM_DRM_BLANK_UNBLANK) {
-				gf_dev->fb_black = 0;
-				msg = GF_NET_EVENT_FB_UNBLACK;
+		blank = *(int *)(evdata->data);
+		switch (blank) {
+		case MSM_DRM_BLANK_UNBLANK:
+			if (gf_dev->device_available == 1) {
+				gf_dev->drm_black = 0;
+				msg = 3;
 				sendnlmsg(&msg);
 			}
-
-	}else if(evdata && evdata->data && val == MSM_DRM_EARLY_EVENT_BLANK && gf_dev){
-		blank = evdata->data;
-			if (gf_dev->device_available == 1 && *blank == MSM_DRM_BLANK_POWERDOWN) {
-				gf_dev->fb_black = 1;
+			break;
+		case MSM_DRM_BLANK_POWERDOWN:
+			if (gf_dev->device_available == 1) {
+				gf_dev->drm_black = 1;
 				gf_dev->wait_finger_down = true;
-				msg = GF_NET_EVENT_FB_BLACK;
+				msg = 2;
 				sendnlmsg(&msg);
 			}
-
+			break;
+		default:
+			break;
+		}
 	}
+
 	return NOTIFY_OK;
 }
 
 static struct notifier_block goodix_noti_block = {
-	.notifier_call = goodix_fb_state_chg_callback,
+	.notifier_call = gf_state_chg_cb,
 };
 
 static struct class *gf_class;
@@ -648,7 +648,7 @@ static int gf_probe(struct platform_device *pdev)
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
 	gf_dev->device_available = 0;
-	gf_dev->fb_black = 0;
+	gf_dev->drm_black = 0;
 	gf_dev->wait_finger_down = false;
 	INIT_WORK(&gf_dev->work, notification_work);
 
