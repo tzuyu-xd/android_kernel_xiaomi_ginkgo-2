@@ -50,12 +50,7 @@
 #include <linux/time.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
-#if defined(USE_SPI_BUS)
-#include <linux/spi/spi.h>
-#include <linux/spi/spidev.h>
-#elif defined(USE_PLATFORM_BUS)
 #include <linux/platform_device.h>
-#endif
 #include <drm/drm_bridge.h>
 #include <net/sock.h>
 #include <net/netlink.h>
@@ -101,8 +96,6 @@ struct gf_key_map {
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
 #define GF_IOC_HAL_INITED_READY _IO(GF_IOC_MAGIC, 15)
 
-#define  USE_PLATFORM_BUS     1
-//#define  USE_SPI_BUS	1
 #define GF_NETLINK_ENABLE 1
 #define GF_NET_EVENT_IRQ 1
 #define GF_NET_EVENT_FB_BLACK 2
@@ -113,11 +106,7 @@ struct gf_key_map {
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
-#if defined(USE_SPI_BUS)
-	struct spi_device *spi;
-#elif defined(USE_PLATFORM_BUS)
 	struct platform_device *spi;
-#endif
 	struct input_dev *input;
 	/* buffer is NULL unless this device is open (users > 0) */
 	unsigned users;
@@ -652,11 +641,7 @@ static struct notifier_block goodix_noti_block = {
 };
 
 static struct class *gf_class;
-#if defined(USE_SPI_BUS)
-static int gf_probe(struct spi_device *spi)
-#elif defined(USE_PLATFORM_BUS)
 static int gf_probe(struct platform_device *pdev)
-#endif
 {
 	struct gf_dev *gf_dev = &gf;
 	int status = -EINVAL;
@@ -665,11 +650,7 @@ static int gf_probe(struct platform_device *pdev)
 	printk("Macle11 gf_probe\n");
 	/* Initialize the driver data */
 	INIT_LIST_HEAD(&gf_dev->device_entry);
-#if defined(USE_SPI_BUS)
-	gf_dev->spi = spi;
-#elif defined(USE_PLATFORM_BUS)
 	gf_dev->spi = pdev;
-#endif
 	gf_dev->irq_gpio = -EINVAL;
 	gf_dev->reset_gpio = -EINVAL;
 	gf_dev->pwr_gpio = -EINVAL;
@@ -760,11 +741,7 @@ error_hw:
 	return status;
 }
 
-#if defined(USE_SPI_BUS)
-static int gf_remove(struct spi_device *spi)
-#elif defined(USE_PLATFORM_BUS)
 static int gf_remove(struct platform_device *pdev)
-#endif
 {
 	struct gf_dev *gf_dev = &gf;
 
@@ -791,11 +768,7 @@ static const struct of_device_id gx_match_table[] = {
 	{},
 };
 
-#if defined(USE_SPI_BUS)
-static struct spi_driver gf_driver = {
-#elif defined(USE_PLATFORM_BUS)
 static struct platform_driver gf_driver = {
-#endif
 	.driver = {
 		.name = GF_DEV_NAME,
 		.owner = THIS_MODULE,
@@ -832,11 +805,7 @@ static int __init gf_init(void)
 		pr_warn("Failed to create class.\n");
 		return PTR_ERR(gf_class);
 	}
-#if defined(USE_PLATFORM_BUS)
 	status = platform_driver_register(&gf_driver);
-#elif defined(USE_SPI_BUS)
-	status = spi_register_driver(&gf_driver);
-#endif
 	if (status < 0) {
 		class_destroy(gf_class);
 		unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
@@ -856,11 +825,7 @@ static void __exit gf_exit(void)
 #ifdef GF_NETLINK_ENABLE
 	netlink_exit();
 #endif
-#if defined(USE_PLATFORM_BUS)
 	platform_driver_unregister(&gf_driver);
-#elif defined(USE_SPI_BUS)
-	spi_unregister_driver(&gf_driver);
-#endif
 	class_destroy(gf_class);
 	unregister_chrdev(SPIDEV_MAJOR, gf_driver.driver.name);
 }
