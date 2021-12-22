@@ -12,8 +12,6 @@
  * GNU General Public License for more details.
  */
 
-#include "../trinket-audio-overlay.dtsi"
-
 &bolero {
 	qcom,num-macros = <3>;
 };

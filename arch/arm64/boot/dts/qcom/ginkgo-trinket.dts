@@ -1,4 +1,5 @@
-/* Copyright (c) 2018, The Linux Foundation. All rights reserved.
+/*
+ * Copyright (c) 2018, The Linux Foundation. All rights reserved.
  * Copyright (C) 2021 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -12,19 +13,13 @@
  */
 
 /dts-v1/;
-/plugin/;
 
-#include <dt-bindings/interrupt-controller/arm-gic.h>
-#include <dt-bindings/clock/qcom,gcc-trinket.h>
-
-#include "trinket-idp.dtsi"
-#include "trinket-audio-overlay.dtsi"
+#include "trinket.dtsi"
 
 #include "ginkgo/ginkgo-trinket.dtsi"
 
 / {
-	model = "GINKGO";
-	compatible = "qcom,trinket-idp", "qcom,trinket", "qcom,idp";
-	qcom,msm-id = <394 0x10000>;
-	qcom,board-id = <34 0>;
+	model = "Qualcomm Technologies, Inc. TRINKET SoC";
+	compatible = "qcom,trinket";
+	qcom,board-id = <0 0>;
 };

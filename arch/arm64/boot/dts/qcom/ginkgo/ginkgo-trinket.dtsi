@@ -12,7 +12,6 @@
  * GNU General Public License for more details.
  */
 
-#include "../trinket-idp.dtsi"
 #include "ginkgo-trinket-audio.dtsi"
 #include "ginkgo-trinket-battery.dtsi"
 #include "ginkgo-trinket-camera.dtsi"
