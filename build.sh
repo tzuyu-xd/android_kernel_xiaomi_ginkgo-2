@@ -75,9 +75,6 @@ tg_post_build() {
 
 # Set function for cloning repository
 clone() {
-	# Clone AnyKernel3
-	git clone --depth=1 https://github.com/fiqri19102002/AnyKernel3.git -b ginkgo
-
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
 		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
@@ -142,10 +139,10 @@ compile() {
 
 # Set function for zipping into a flashable zip
 gen_zip() {
-	# Move kernel and DTBO image to AnyKernel3
-	mv "$IMG_DIR"/Image.gz-dtb AnyKernel3/Image.gz-dtb
-	mv "$IMG_DIR"/dtbo.img AnyKernel3/dtbo.img
-	cd AnyKernel3 || exit
+	# Move kernel and DTBO image to flasher aka AnyKernel3
+	mv "$IMG_DIR"/Image.gz-dtb flasher/Image.gz-dtb
+	mv "$IMG_DIR"/dtbo.img flasher/dtbo.img
+	cd flasher || exit
 
 	# Archive to flashable zip
 	zip -r9 "$ZIP_NAME" * -x .git README.md *.zip
