@@ -23,6 +23,7 @@ supported.patchlevels=
 block=/dev/block/bootdevice/by-name/boot;
 is_slot_device=0;
 ramdisk_compression=auto;
+patch_vbmeta_flag=auto;
 
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
@@ -58,6 +59,7 @@ flash_dtbo;
 #block=vendor_boot;
 #is_slot_device=1;
 #ramdisk_compression=auto;
+#patch_vbmeta_flag=auto;
 
 # reset for vendor_boot patching
 #reset_ak;
