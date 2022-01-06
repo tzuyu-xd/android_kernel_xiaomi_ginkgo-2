@@ -48,6 +48,14 @@ else
   patch_cmdline "androidboot.version" ""
 fi
 
+# Set product hardware for kernel
+sku="$(file_getprop /system/build.prop ro.build.product)"
+if [ ! -z "$sku" ]; then
+  patch_cmdline "androidboot.product.hardware.sku" "androidboot.product.hardware.sku=$sku"
+else
+  patch_cmdline "androidboot.product.hardware.sku" ""
+fi
+
 # end ramdisk changes
 
 flash_boot;
