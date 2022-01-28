@@ -100,7 +100,7 @@ clone() {
 
 # Set function for naming zip file
 set_naming() {
-	KERNEL_NAME="STRIX-ginkgo-unified-personal-$DATE"
+	KERNEL_NAME="STRIX-ginklow-unified-personal-$DATE"
 	export ZIP_NAME="$KERNEL_NAME.zip"
 }
 
