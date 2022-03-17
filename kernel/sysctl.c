@@ -253,6 +253,11 @@ static int sysrq_sysctl_handler(struct ctl_table *table, int write,
 #endif
 
 #ifdef CONFIG_BPF_SYSCALL
+
+void __weak unpriv_ebpf_notify(int new_state)
+{
+}
+
 static int bpf_unpriv_handler(struct ctl_table *table, int write,
                              void *buffer, size_t *lenp, loff_t *ppos)
 {
@@ -270,6 +275,9 @@ static int bpf_unpriv_handler(struct ctl_table *table, int write,
 			return -EPERM;
 		*(int *)table->data = unpriv_enable;
 	}
+
+	unpriv_ebpf_notify(unpriv_enable);
+
 	return ret;
 }
 #endif
@@ -333,6 +341,16 @@ static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END-1;
 #ifdef CONFIG_COMPACTION
 static int min_extfrag_threshold;
 static int max_extfrag_threshold = 1000;
+#endif
+
+#ifndef CONFIG_SCHED_WALT
+unsigned int dummy_sysctl_sched_boost = 0;
+int dummy_sched_boost_handler(struct ctl_table *table, int write,
+		void __user *buffer, size_t *lenp,
+		loff_t *ppos)
+{
+	return 0;
+}
 #endif
 
 static struct ctl_table kern_table[] = {
@@ -440,6 +458,16 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= sched_little_cluster_coloc_fmin_khz_handler,
 		.extra1		= &zero,
 		.extra2		= &two_million,
+	},
+#else
+	{
+		.procname	= "sched_boost",
+		.data		= &dummy_sysctl_sched_boost,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= dummy_sched_boost_handler,
+		.extra1		= &neg_three,
+		.extra2		= &three,
 	},
 #endif
 	{
