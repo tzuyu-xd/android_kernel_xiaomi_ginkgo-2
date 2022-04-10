@@ -77,7 +77,7 @@ tg_post_build() {
 clone() {
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
-		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+		git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
 		# Set environment for clang
 		TC_DIR=$KERNEL_DIR/clang
 		# Get path and compiler string
