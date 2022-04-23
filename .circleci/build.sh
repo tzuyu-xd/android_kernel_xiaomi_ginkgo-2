@@ -80,7 +80,7 @@ clone() {
 		TC_DIR="$KERNEL_DIR/clang"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-                PATH="/root/clang/bin:${PATH}"
+                PATH="$TC_DIR/clang/bin:${PATH}"
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
