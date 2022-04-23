@@ -1,0 +1,19 @@
+version: 2.1
+jobs:
+  compile:
+   docker:
+      - image: tyuzu/kernel:build
+   steps:
+      - run:
+          command: |
+           git config --global user.name "tzuyu-xd"
+           git config --global user.email "sahruldarmian212@gmail.com"
+           git config --global color.ui false
+           git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
+           bash .circleci/build.sh --proton
+
+workflows:
+  version: 2.1
+  cooking:
+    jobs:
+      - compile
