@@ -121,10 +121,9 @@ compile() {
 	elif [[ $COMPILER == "gcc" ]]; then
 		make -j"$PROCS" O=out \
 		        ARCH=arm64 \
-				LOCALVERSION=-${DATE} \
 				CROSS_COMPILE_ARM32=arm-eabi- \
 				CROSS_COMPILE=aarch64-elf- \
-				LD=aarch64-elf-ld.lld
+				LD=ld.lld
 	fi
 	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
