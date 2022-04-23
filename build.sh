@@ -85,8 +85,8 @@ clone() {
 		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/mvaisakh/gcc-arm64.git -b gcc-new --depth=1 gcc64
-		git clone https://github.com/mvaisakh/gcc-arm.git -b gcc-new --depth=1 gcc32
+		git clone https://github.com/mvaisakh/gcc-arm64.git -b gcc-master --depth=1 gcc64
+		git clone https://github.com/mvaisakh/gcc-arm.git -b gcc-master --depth=1 gcc32
 		# Set environment for GCC ARM64 and ARM32
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
@@ -121,8 +121,15 @@ compile() {
 				OBJDUMP=llvm-objdump \
 				STRIP=llvm-strip
 	elif [[ $COMPILER == "gcc" ]]; then
-		export CROSS_COMPILE_ARM32=$GCC32_DIR/bin/arm-eabi-
-		make -j"$PROCS" O=out CROSS_COMPILE=aarch64-elf-
+		make -j"$PROCS" O=out \
+				CROSS_COMPILE=aarch64-elf- \
+				AR=llvm-ar \
+				AS=llvm-as \
+				LD=ld.lld \
+				NM=llvm-nm \
+				OBJCOPY=llvm-objcopy \
+				OBJDUMP=llvm-objdump \
+				STRIP=llvm-strip
 	fi
 	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
@@ -158,3 +165,4 @@ clone
 compile
 set_naming
 gen_zip
+
