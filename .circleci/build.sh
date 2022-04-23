@@ -6,8 +6,16 @@
 #
 
 # Set environment for directory
-KERNEL_DIR=$PWD
+KERNEL_DIR=$pwd
 IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot
+
+# Set environment for GCC ARM64 and ARM32
+GCC64_DIR="$KERNEL_DIR/gcc64"
+GCC32_DIR="$KERNEL_DIR/gcc32"
+
+# Get path and compiler string
+KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
+PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 
 # Get defconfig file
 DEFCONFIG=vendor/ginkgo-perf_defconfig
@@ -18,7 +26,7 @@ export SUBARCH=arm64
 export KBUILD_BUILD_VERSION="1"
 export KBUILD_BUILD_USER="tzuyu-xd"
 export KBUILD_BUILD_HOST="circleci"
-
+		
 # Set environment for telegram
 export CHATID="-1001559491005"
 export token="5330590089:AAE3gFWPQBVJuQfFln8sQkDXJrW_fHBvxc0"
@@ -76,24 +84,13 @@ clone() {
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
 		git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
-		# Set environment for clang
-		TC_DIR=$KERNEL_DIR/clang
-		# Get path and compiler string
-		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
-                git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git gcc32
-		# Set environment for GCC ARM64 and ARM32
-		GCC64_DIR="$KERNEL_DIR/gcc64"
-		GCC32_DIR="$KERNEL_DIR/gcc32"
-		# Get path and compiler string
-		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
-		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
+        git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git -b gcc-master gcc32
 	fi
 	
-	export PATH KBUILD_COMPILER_STRING
+	export $PATH $KBUILD_COMPILER_STRING
 }
 
 # Set function for naming zip file
@@ -102,19 +99,23 @@ kernel_name() {
 	export ZIP_NAME="$KERNEL_NAME.zip"
 }
 
+if [[ $1 = "-r" || $1 = "--regen" ]]; then
+make O=out ARCH=arm64 $DEFCONFIG savedefconfig
+cp out/defconfig arch/arm64/configs/$DEFCONFIG
+exit
+fi
+
+if [[ $1 = "-c" || $1 = "--clean" ]]; then
+rm -rf out
+fi
+
+mkdir -p out
+make O=out ARCH=arm64 $DEFCONFIG
+
 # Set function for starting compile
 compile() {
 	echo -e "Kernel compilation starting"
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Stable"
- 
-        # make defconfig
-        make ARCH=arm64 O=out $DEFCONFIG -j"$PROCS"
-
-        # make olddefconfig
-        cd out
-        make O=out ARCH=arm64 olddefconfig
-        cd ../
-
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
 		make -j"$PROCS" O=out \
