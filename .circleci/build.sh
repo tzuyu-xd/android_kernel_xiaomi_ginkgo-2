@@ -83,11 +83,11 @@ clone() {
 		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		wget -O 64.zip https://github.com/mvaisakh/gcc-arm64/archive/85b79055a926ffa45ed7ce0005731d7bda4db137.zip;unzip 64.zip;mv gcc-arm64-85b79055a926ffa45ed7ce0005731d7bda4db137 gcc64
-        wget -O 32.zip https://github.com/mvaisakh/gcc-arm/archive/b9cada9f629b7b3f72b201c77d93042695de33fc.zip;unzip 32.zip;mv gcc-arm-b9cada9f629b7b3f72b201c77d93042695de33fc gcc32
+		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
+                git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git gcc32
 		# Set environment for GCC ARM64 and ARM32
-		GCC64_DIR=$KERNEL_DIR/gcc64
-		GCC32_DIR=$KERNEL_DIR/gcc32
+		GCC64_DIR="$KERNEL_DIR/gcc64"
+		GCC32_DIR="$KERNEL_DIR/gcc32"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
 		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
@@ -106,7 +106,15 @@ kernel_name() {
 compile() {
 	echo -e "Kernel compilation starting"
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Stable"
-	make O=out "$DEFCONFIG"
+ 
+        # make defconfig
+        make ARCH=arm64 O=out $DEFCONFIG -j"$PROCS"
+
+        # make olddefconfig
+        cd out
+        make O=out ARCH=arm64 olddefconfig
+        cd ../
+
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
 		make -j"$PROCS" O=out \
