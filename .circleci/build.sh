@@ -37,7 +37,7 @@ then
 elif [[ $COMPILER = "proton" ]]
 then
   echo  "|| Cloning Proton-13 ||"
-  git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+  git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING=$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 elif [[ $COMPILER = "proton" ]]
@@ -60,6 +60,9 @@ KERNEL_DIR=$(pwd)
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 SHA=$(date +"%F-%S")
 START1=$(date +"%s")
+DEFCONFIG=vendor/ginkgo-perf_defconfig
+PROCS=$(nproc --all)
+export PROCS
 export token="5330590089:AAE3gFWPQBVJuQfFln8sQkDXJrW_fHBvxc0"
 export chat_id="-1001559491005"
 export ARCH=arm64
@@ -93,20 +96,18 @@ function finerr() {
 }
 # Compile plox
 function compile() {
-    make -s -j$(nproc --all) O=out ARCH=arm64 vendor/ginkgo-perf_defconfig
-    	if [[ $COMPILER = "azure" ]]
+    make O=out "$DEFCONFIG"
+    	if [[ $COMPILER = "clang" ]]
     	then
-        make -j$(nproc --all) O=out \
-    				ARCH=arm64 \
+        make -j"$PROCS" O=out \
+    				CROSS_COMPILE=aarch64-linux-gnu- \
+    				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
     				CC=clang \
     				AR=llvm-ar \
     				NM=llvm-nm \
-    				OBJCOPY=llvm-objcopy \
+    				LD=ld.lld \
     				OBJDUMP=llvm-objdump \
-    				STRIP=llvm-strip \
-    				CLANG_TRIPLE=aarch64-linux-gnu- \
-    				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-    				CROSS_COMPILE=aarch64-linux-gnu-
+    				STRIP=llvm-strip
         elif [[ $COMPILER = "proton" ]]
         then
         make -j$(nproc --all) O=out \
