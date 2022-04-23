@@ -6,14 +6,11 @@ jobs:
    steps:
       - run:
           command: |
-           git config --global user.name "tzuyu-xd"
-           git config --global user.email "sahruldarmian212@gmail.com"
-           git config --global color.ui true
            git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
            bash .circleci/build.sh
 
 workflows:
   version: 2.1
-  cooking:
+  build:
     jobs:
       - compile
