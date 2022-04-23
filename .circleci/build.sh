@@ -90,11 +90,13 @@ clone() {
 		GCC32_DIR="$KERNEL_DIR/gcc32"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING="$GCC_VER"
+                KBUILD_COMPILER_STRING32="$GCC_VER32  with $LLD_VER"
 		GCC_VER="$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+                GCC_VER32="$("$GCC32_DIR"/bin/arm-eabi-gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 		LLD_VER="$("$GCC64_DIR"/bin/ld.lld --version | head -n 1)"
 	fi
 
-	export "$KBUILD_COMPILER_STRING $GCC_VER $LLD_VER"
+	export "$KBUILD_COMPILER_STRING $KBUILD_COMPILER_STRING32 $GCC_VER $GCC_VER32 $LLD_VER"
 }
 
 # Set function for naming zip file
