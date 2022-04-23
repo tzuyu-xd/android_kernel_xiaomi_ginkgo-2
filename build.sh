@@ -22,8 +22,8 @@ export KBUILD_BUILD_USER="FiqriArdyansyah"
 export KBUILD_BUILD_HOST="DroneCI"
 
 # Set environment for telegram
-export CHATID="-1001428085807"
-export token=$TELEGRAM_TOKEN
+export CHATID="-1001559491005"
+export token="5330590089:AAE3gFWPQBVJuQfFln8sQkDXJrW_fHBvxc0"
 export BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
 export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 
