@@ -29,7 +29,7 @@ export BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
 # Set if do you use GCC or clang compiler
 # Default is clang compiler
 #
-COMPILER=gcc
+COMPILER=clang
 
 # Get distro name
 DISTRO=$(source /etc/os-release && echo ${NAME})
@@ -75,12 +75,12 @@ tg_post_build() {
 clone() {
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
-		git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
+		git clone --depth=1 https://github.com/NusantaraDevs/clang.git -b dev/12.0 clang
 		# Set environment for clang
 		TC_DIR="$KERNEL_DIR/clang"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-		PATH="$TC_DIR/bin/:$PATH"
+                PATH="/root/clang/bin:${PATH}"
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
