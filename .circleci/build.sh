@@ -9,14 +9,6 @@
 KERNEL_DIR=$pwd
 IMG_DIR=$KERNEL_DIR/out/arch/arm64/boot
 
-# Set environment for GCC ARM64 and ARM32
-GCC64_DIR=$KERNEL_DIR/gcc64
-GCC32_DIR=$KERNEL_DIR/gcc32
-
-# Get path and compiler string
-KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
-PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
-
 # Get defconfig file
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
@@ -84,10 +76,21 @@ clone() {
 	if [[ $COMPILER == "clang" ]]; then
 		# Clone Proton clang
 		git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
+		# Set environment for clang
+		TC_DIR=$KERNEL_DIR/clang
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
         git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git -b gcc-master gcc32
+		# Set environment for GCC ARM64 and ARM32
+		GCC64_DIR=$KERNEL_DIR/gcc64
+		GCC32_DIR=$KERNEL_DIR/gcc32
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
+		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 	fi
 	
 	export $PATH $KBUILD_COMPILER_STRING
