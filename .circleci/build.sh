@@ -3,8 +3,6 @@
 #
 # Script for building Android arm64 Kernel
 #
-# Copyright (c) 2021 Fiqri Ardyansyah <fiqri15072019@gmail.com>
-# Based on Panchajanya1999 script.
 #
 
 # Set environment for directory
@@ -85,8 +83,8 @@ clone() {
 		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/mvaisakh/gcc-arm64.git -b gcc-master --depth=1 gcc64
-		git clone https://github.com/mvaisakh/gcc-arm.git -b gcc-master --depth=1 gcc32
+		wget -O 64.zip https://github.com/mvaisakh/gcc-arm64/archive/85b79055a926ffa45ed7ce0005731d7bda4db137.zip;unzip 64.zip;mv gcc-arm64-85b79055a926ffa45ed7ce0005731d7bda4db137 gcc64
+        wget -O 32.zip https://github.com/mvaisakh/gcc-arm/archive/b9cada9f629b7b3f72b201c77d93042695de33fc.zip;unzip 32.zip;mv gcc-arm-b9cada9f629b7b3f72b201c77d93042695de33fc gcc32
 		# Set environment for GCC ARM64 and ARM32
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
@@ -99,7 +97,7 @@ clone() {
 }
 
 # Set function for naming zip file
-set_naming() {
+kernel_name() {
 	KERNEL_NAME="Miui-ginklow-R-$DATE"
 	export ZIP_NAME="$KERNEL_NAME.zip"
 }
@@ -142,7 +140,7 @@ compile() {
 }
 
 # Set function for zipping into a flashable zip
-gen_zip() {
+zipping() {
 	# Move kernel and DTBO image to flasher aka AnyKernel3
 	mv "$IMG_DIR"/Image.gz-dtb flasher/Image.gz-dtb
 	mv "$IMG_DIR"/dtbo.img flasher/dtbo.img
@@ -160,6 +158,6 @@ gen_zip() {
 
 clone
 compile
-set_naming
-gen_zip
+kernel_name
+zipping
 
