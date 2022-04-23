@@ -39,7 +39,7 @@ then
   echo  "|| Cloning Proton-13 ||"
   git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
-  export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+  export KBUILD_COMPILER_STRING=$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 elif [[ $COMPILER = "proton" ]]
 then
   echo  "|| Cloning Snapdragon-14 ||"
@@ -101,7 +101,6 @@ function compile() {
     				CC=clang \
     				AR=llvm-ar \
     				NM=llvm-nm \
-    				LD=ld.lld \
     				OBJCOPY=llvm-objcopy \
     				OBJDUMP=llvm-objdump \
     				STRIP=llvm-strip \
