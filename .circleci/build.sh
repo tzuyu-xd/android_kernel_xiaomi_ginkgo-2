@@ -6,7 +6,7 @@
 #
 
 # Set environment for directory
-KERNEL_DIR="$pwd"
+KERNEL_DIR="${PWD}"
 IMG_DIR="$KERNEL_DIR/out/arch/arm64/boot"
 
 # Get defconfig file
@@ -89,10 +89,10 @@ clone() {
 		GCC64_DIR="$KERNEL_DIR/gcc64"
 		GCC32_DIR="$KERNEL_DIR/gcc32"
 		# Get path and compiler string
-		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
+		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/ld.lld --version | head -n 1)"
 		PATH="$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH"
 	fi
-	
+
 	export $PATH $KBUILD_COMPILER_STRING
 }
 
