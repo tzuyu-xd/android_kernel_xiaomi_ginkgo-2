@@ -18,8 +18,8 @@ DEFCONFIG=vendor/ginkgo-perf_defconfig
 export ARCH=arm64
 export SUBARCH=arm64
 export KBUILD_BUILD_VERSION="1"
-export KBUILD_BUILD_USER="FiqriArdyansyah"
-export KBUILD_BUILD_HOST="DroneCI"
+export KBUILD_BUILD_USER="tzuyu-xd"
+export KBUILD_BUILD_HOST="circleci"
 
 # Set environment for telegram
 export CHATID="-1001559491005"
@@ -85,8 +85,8 @@ clone() {
 		PATH=$TC_DIR/bin/:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
-		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc64
-		git clone https://github.com/fiqri19102002/arm-gcc.git -b elf-gcc-11-tarballs --depth=1 gcc32
+		git clone https://github.com/mvaisakh/gcc-arm64.git -b gcc-new --depth=1 gcc64
+		git clone https://github.com/mvaisakh/gcc-arm.git -b gcc-new --depth=1 gcc32
 		# Set environment for GCC ARM64 and ARM32
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
@@ -100,14 +100,14 @@ clone() {
 
 # Set function for naming zip file
 set_naming() {
-	KERNEL_NAME="STRIX-ginklow-unified-personal-$DATE"
+	KERNEL_NAME="Miui-ginklow-R-$DATE"
 	export ZIP_NAME="$KERNEL_NAME.zip"
 }
 
 # Set function for starting compile
 compile() {
 	echo -e "Kernel compilation starting"
-	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
+	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Stable"
 	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
