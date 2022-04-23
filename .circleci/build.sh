@@ -6,15 +6,15 @@
 #
 
 # Set environment for directory
-KERNEL_DIR=$pwd
-IMG_DIR=$KERNEL_DIR/out/arch/arm64/boot
+KERNEL_DIR="$pwd"
+IMG_DIR="$KERNEL_DIR/out/arch/arm64/boot"
 
 # Get defconfig file
-DEFCONFIG=vendor/ginkgo-perf_defconfig
+DEFCONFIG="vendor/ginkgo-perf_defconfig"
 
 # Set environment for etc.
-export ARCH=arm64
-export SUBARCH=arm64
+export ARCH="arm64"
+export SUBARCH="arm64"
 export KBUILD_BUILD_VERSION="1"
 export KBUILD_BUILD_USER="tzuyu-xd"
 export KBUILD_BUILD_HOST="circleci"
@@ -77,20 +77,20 @@ clone() {
 		# Clone Proton clang
 		git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
 		# Set environment for clang
-		TC_DIR=$KERNEL_DIR/clang
+		TC_DIR="$KERNEL_DIR/clang"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-		PATH=$TC_DIR/bin/:$PATH
+		PATH="$TC_DIR/bin/:$PATH"
 	elif [[ $COMPILER == "gcc" ]]; then
 		# Clone GCC ARM64 and ARM32
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-master gcc64
         git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git -b gcc-master gcc32
 		# Set environment for GCC ARM64 and ARM32
-		GCC64_DIR=$KERNEL_DIR/gcc64
-		GCC32_DIR=$KERNEL_DIR/gcc32
+		GCC64_DIR="$KERNEL_DIR/gcc64"
+		GCC32_DIR="$KERNEL_DIR/gcc32"
 		# Get path and compiler string
 		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
-		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
+		PATH="$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH"
 	fi
 	
 	export $PATH $KBUILD_COMPILER_STRING
@@ -106,7 +106,7 @@ kernel_name() {
 compile() {
 	echo -e "Kernel compilation starting"
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Stable"
-	make O=out "$DEFCONFIG"
+	make O=out ARCH=arm64 $DEFCONFIG
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
 		make -j"$PROCS" O=out \
@@ -122,8 +122,7 @@ compile() {
 		make -j"$PROCS" O=out \
 		        ARCH=arm64 \
 				CROSS_COMPILE_ARM32=arm-eabi- \
-				CROSS_COMPILE=aarch64-elf- \
-				LD=ld.lld
+				CROSS_COMPILE=aarch64-elf- 
 	fi
 	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
