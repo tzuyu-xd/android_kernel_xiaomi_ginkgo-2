@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   compile:
    docker:
-      - image: tyuzu/kernel:build
+      - image: tyuzu/kernel:latest
    steps:
       - run:
           command: |
