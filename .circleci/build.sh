@@ -7,11 +7,11 @@
 
 # Set environment for directory
 KERNEL_DIR=$pwd
-IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot
+IMG_DIR=$KERNEL_DIR/out/arch/arm64/boot
 
 # Set environment for GCC ARM64 and ARM32
-GCC64_DIR="$KERNEL_DIR/gcc64"
-GCC32_DIR="$KERNEL_DIR/gcc32"
+GCC64_DIR=$KERNEL_DIR/gcc64
+GCC32_DIR=$KERNEL_DIR/gcc32
 
 # Get path and compiler string
 KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
@@ -99,23 +99,11 @@ kernel_name() {
 	export ZIP_NAME="$KERNEL_NAME.zip"
 }
 
-if [[ $1 = "-r" || $1 = "--regen" ]]; then
-make O=out ARCH=arm64 $DEFCONFIG savedefconfig
-cp out/defconfig arch/arm64/configs/$DEFCONFIG
-exit
-fi
-
-if [[ $1 = "-c" || $1 = "--clean" ]]; then
-rm -rf out
-fi
-
-mkdir -p out
-make O=out ARCH=arm64 $DEFCONFIG
-
 # Set function for starting compile
 compile() {
 	echo -e "Kernel compilation starting"
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Stable"
+	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
 		make -j"$PROCS" O=out \
